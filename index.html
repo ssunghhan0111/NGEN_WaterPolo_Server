@@ -68,6 +68,13 @@ table.stats td:nth-child(2){color:#4a6378;font-size:12px;letter-spacing:.1em;tex
 .topbtn.mus{font:400 22px var(--display);position:relative}
 .topbtn.mus.off{color:#8aa3b3}
 .topbtn.mus.off::after{content:'';position:absolute;left:8px;right:8px;top:50%;height:3px;background:#e5383b;transform:rotate(-45deg);border-radius:2px}
+.topbtn.emo{font-size:20px}
+.emoTray{position:fixed;z-index:8;top:calc(env(safe-area-inset-top,0px) + 62px);right:calc(env(safe-area-inset-right,0px) + 10px);display:grid;grid-template-columns:repeat(4,auto);gap:6px;background:var(--foam);border:3px solid var(--ink);border-radius:16px;padding:8px;box-shadow:0 4px 0 var(--ink)}
+.emoTray[hidden]{display:none!important}
+.emoTray button{font:400 24px/1 "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;min-width:48px;height:48px;border:2.5px solid var(--ink);border-radius:12px;background:#fff;cursor:pointer;padding:0 6px}
+.emoTray button.txt{font:900 13px var(--body);color:var(--ink)}
+.king{background:linear-gradient(135deg,#fff6c2,#ffd23f);border:3px solid var(--ink);border-radius:14px;padding:8px 12px;font:800 14px var(--body);text-align:center}
+.king b{font:400 19px var(--display);letter-spacing:.02em}
 .sndHint{position:fixed;z-index:7;top:calc(env(safe-area-inset-top,0px) + 62px);right:calc(env(safe-area-inset-right,0px) + 10px);background:var(--sun);color:var(--ink);border:3px solid var(--ink);border-radius:14px;padding:6px 12px;font:900 13px var(--body);box-shadow:0 3px 0 var(--ink);pointer-events:none;animation:hintBob 1.6s ease-in-out infinite}
 .sndHint::before{content:'';position:absolute;top:-9px;right:74px;border:8px solid transparent;border-top:0;border-bottom-color:var(--ink)}
 @keyframes hintBob{50%{transform:translateY(3px)}}
@@ -261,6 +268,18 @@ table.stats td:nth-child(2){color:#4a6378;font-size:12px;letter-spacing:.1em;tex
 .spinner{flex:none;width:30px;height:30px;border-radius:50%;border:5px solid #fff;border-top-color:var(--pool);animation:spin 0.9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spinner{animation-duration:3s}}
+.trophy{display:grid;justify-items:center;gap:4px;background:radial-gradient(circle at 50% 35%,#fff6c2,#ffd23f 60%,#ffb703);border:4px solid var(--ink);border-radius:20px;padding:14px;box-shadow:0 6px 0 var(--ink)}
+.trophy .cup{font-size:84px;line-height:1;animation:lift 1.6s cubic-bezier(.2,1.4,.4,1) both, shine 1.8s ease-in-out 1.6s infinite}
+.trophy .t1{font:400 30px var(--display);letter-spacing:.04em;color:var(--ink)}
+.trophy .t2{font:800 14px var(--body);color:var(--ink)}
+@keyframes lift{0%{transform:translateY(40px) scale(.4) rotate(-20deg)}60%{transform:translateY(-14px) scale(1.15) rotate(6deg)}100%{transform:none}}
+@keyframes shine{50%{transform:translateY(-6px) rotate(-4deg)}}
+@media (prefers-reduced-motion:reduce){.trophy .cup{animation:none}}
+.champ.fin{background:linear-gradient(160deg,#1a1240,#2a2d7c);color:#fff}
+.champ.fin .t1{color:#ffd23f}
+.evTag{background:var(--ink);color:var(--sun);border-radius:999px;padding:2px 8px;letter-spacing:.04em}
+.promo{margin:4px 0 0;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:8px 12px;font:800 14px var(--body);color:var(--ink);text-align:center}
+.promo.up{background:#e9fbf3;font-size:16px}
 .recordLine{margin:0;text-align:center;font:800 14px var(--body);color:#3d5a73}
 .recordLine b{font:400 17px var(--display);color:var(--ink);letter-spacing:.02em}
 .card.season{max-width:860px;gap:14px}
@@ -326,9 +345,11 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
 </style>
 
 <canvas id="cv" aria-label="Water polo pool"></canvas>
+<div id="emoTray" class="emoTray" hidden role="menu" aria-label="Emoji"></div>
 <div id="sndHint" class="sndHint" hidden>Click anywhere for sound 🔊</div>
 <div id="topBtns">
   <button id="musBtn" class="topbtn mus" aria-pressed="true" aria-label="Music on" title="Music">♪</button>
+  <button id="emoBtn" class="topbtn emo" hidden aria-label="Send an emoji" aria-expanded="false">😀</button>
   <button id="micBtn" class="topbtn mic" hidden aria-pressed="false" aria-label="Mic off: tap to talk">🎤</button>
   <button id="pauseBtn" class="topbtn" hidden aria-label="Pause">II</button>
   <button id="fsBtn" class="topbtn" hidden aria-label="Full screen">⛶</button>
@@ -346,7 +367,7 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
     <div class="edition" id="edition">Cartoon water polo</div>
     <button class="btn go" id="seasonBtn">PLAY</button>
     <button class="btn online" id="onlineBtn">ONLINE 1v1</button>
-    <div class="row"><span class="lbl">Difficulty</span><div class="chips" id="diffChips"></div></div>
+    <div hidden><div class="chips" id="diffChips"></div></div>
     <div class="starbar" id="starBar"></div>
     <button class="btn small locker" id="lockerBtn">🎒 MY LOCKER</button>
     <div hidden><div class="swatches" id="swatches"></div></div>
@@ -466,6 +487,7 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
      <div class="onMain">
       <div class="onMeRow"><div class="onMe" id="onMe"></div><button class="btn small" id="onChange">Change</button></div>
       <div class="onStatus" id="onState" role="status" aria-live="polite"><div class="spinner" id="onSpin" aria-hidden="true"></div><div><div id="onStatus">Connecting…</div><div class="hint" id="onSub"></div></div></div>
+      <div class="king" id="onKing" hidden></div>
       <div id="onListWrap" hidden><div class="lbl">Online now</div><div class="onList" id="onList"></div></div>
       <div id="onHist" hidden>
         <div class="lbl">My games</div><ul class="onHistList" id="onMine"></ul>
@@ -520,6 +542,7 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
     <div class="result" id="endTitle">VICTORY!</div>
     <div class="final"><div class="nm" id="endHome">Ngen</div><div class="sc" id="endScore">0 – 0</div><div class="nm" id="endAway">Rays</div></div>
     <div class="hint" id="endNote" style="text-align:center"></div>
+    <div class="trophy" id="trophyCard" hidden><div class="cup" aria-hidden="true">🏆</div><div class="t1">CHAMPIONS!</div><div class="t2" id="trophyN"></div></div>
     <div class="chEnd" id="chEnd"></div>
     <div class="unlock" id="unlockCard" hidden><div class="t1">NEW UNLOCK!</div><canvas id="unlockIcon" width="96" height="96" aria-hidden="true"></canvas><div class="t2" id="unlockName"></div></div>
     <div class="starbar" id="endStarBar"></div>
@@ -529,6 +552,7 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
     <div id="endLearn" hidden><div class="lbl" style="text-align:center;margin-bottom:8px">Rules you met this game</div><div class="chiprow" id="endRules"></div><p class="hint" id="endQuiz" style="text-align:center;margin:10px 0 0"></p></div>
     <div class="btns">
       <button class="btn go" id="againBtn">PLAY AGAIN</button>
+      <button class="btn go" id="rematchBtn" hidden>REMATCH</button>
       <button class="btn small" id="replayBtn" hidden>▶ Best goal replay</button>
       <button class="btn small" id="menuBtn">Main menu</button>
     </div>
@@ -1033,6 +1057,8 @@ function newGame(o){
   if (!o.demo && !o.net && !o.netClient){ G.rot=Math.floor(rnd()*G.nf); G.starIdx=1+G.rot; }
   // the "___ scores" challenge spotlights a different teammate each game
   if (o.levels) for (const p of G.teams[0].players){ const L=o.levels[p.num]; if (L) p.lv=L; }
+  G.event = o.event || null;                 // surprise pool event: 'night' | 'wave' | 'beach'
+  if (G.event==='beach') G.ballSkin='beach';
   G.chStarNum = o.chStar || 0;
   if (G.chStarNum){ const sp=G.teams[0].players.find(p=>p.num===G.chStarNum); if (sp) G.starName=nameOf(sp)||`#${sp.num}`; }
   G.ch = (o.ch||[]).filter(id=>CHALLENGES[id]).map(id=>({ id, need:CHALLENGES[id].need, text:CHALLENGES[id].text(G), prog:0, done:false, flash:-1 }));
@@ -1130,7 +1156,7 @@ function shoot(p, aimY, power, lob){
   const t=T(p.team), d=opp(p.team), b=G.ball;
   b.owner=null; b.x=p.x+p.fx*0.45; b.y=p.y+p.fy*0.45; b.z=0.75;
   const tx=goalX(t)+t.dir*0.35;
-  const s = lob ? 6.0 : 8.5+power*8;
+  const s = (lob ? 6.0 : 8.5+power*8) * (G.event==='beach' ? 0.85 : 1);   // a beach ball floats slower
   const D=hyp(tx-b.x,aimY-b.y), tt=Math.max(0.12,D/s);
   const tz = lob ? 0.82 : R(0.15,0.72);
   b.vx=(tx-b.x)/tt; b.vy=(aimY-b.y)/tt; b.vz=(tz-b.z+4.9*tt*tt)/tt;
@@ -1595,9 +1621,11 @@ function accel(p, dvx, dvy, dt, A){
   p.vx+=ax; p.vy+=ay;
 }
 
+const waveCur = x => Math.sin(G.t*0.7 + x*0.25)*0.6;   // wave pool current (m/s, up/down the pool)
 function integrate(p, dt){
   if (p.lungeT>0){ p.lungeT-=dt; p.x+=p.lx*3.4*dt; p.y+=p.ly*3.4*dt; }
   p.x+=p.vx*dt; p.y+=p.vy*dt;
+  if (G.event==='wave' && !p.gk && G.state==='play') p.y+=waveCur(p.x)*dt;   // the wave pool pushes swimmers around
   const t=T(p.team);
   if (p.gk){ const v=clamp(vOf(t,p.x),0.12,RULES.L/2); p.x=xV(t,v); p.y=clamp(p.y,0.4,19.6); }
   else { p.x=clamp(p.x,0.25,RULES.L-0.25); p.y=clamp(p.y,0.3,RULES.W-0.3); }
@@ -2069,6 +2097,8 @@ function playStep(dt){
   if (G.seats){ for (const a of G.seats){ withSeat(a, ()=>humanStep(dt)); if (G.state!=='play') return; } }
   else if (G.humanId>=0){ humanStep(dt); if (G.state!=='play') return; }
   puStep(dt);
+  if (G.event==='wave' && !b.owner && b.z<0.3 && !(b.shot && !b.shot.done)) b.y=clamp(b.y+waveCur(b.x)*0.8*dt, 0.3, RULES.W-0.3);
+  if (G.event==='beach' && !G.pu && G.puNext>2.5) G.puNext-=dt*0.6;     // beach party: more power-up bubbles
   learnStep(dt);
   moveAll(dt); if (G.state!=='play') return;
   separate();
@@ -2287,7 +2317,7 @@ function makeSchedule(ids){
 function newSeason(n, cfg){
   const ids=[HOME_ID, ...LEAGUE_TEAMS.map(t=>t.id)];
   const rec={}, ts={}; for (const id of ids){ rec[id]={ w:0, l:0, gf:0, ga:0, sow:0, sol:0, last:[] }; ts[id]={ gp:0, shots:0, steals:0, saves:0, dist:0, exd:0 }; }
-  return { v:1, n, qlen:cfg.qlen, size:cfg.size, diff:cfg.diff, round:0, rounds:makeSchedule(ids), results:[], rec, ts, ps:{}, recap:[], done:false };
+  return { v:1, n, qlen:cfg.qlen, size:cfg.size, diff:cfg.diff, div:cfg.div||0, round:0, rounds:makeSchedule(ids), results:[], rec, ts, ps:{}, recap:[], done:false };
 }
 function homeGameOf(se, r){ const rd=se.rounds[r]; return rd ? rd.find(pr=>pr[0]===HOME_ID) : null; }
 function applyResult(se, sum, r){
@@ -2338,6 +2368,21 @@ let S = { team:'Ngen Aquatics', cap:'navy', opp:0, diff:'rookie', qlen:120, size
 try{ const raw=localStorage.getItem(STORE); if (raw){ const old=JSON.parse(raw); S={...S, ...old}; if (!old.sv){ S.diff='rookie'; S.sv=2; } } }catch(e){}
 if (!S.record) S.record={w:0,l:0};
 if (typeof S.stars!=='number') S.stars=0;
+// Divisions: no difficulty menu any more. Finish a season winning at least half your games to move up.
+const DIVS=[ { diff:'rookie', name:'Rookie', boost:1 }, { diff:'club', name:'Club', boost:1 }, { diff:'olympic', name:'Olympic', boost:1 },
+  { diff:'olympic', name:'Olympic II', boost:1.05 }, { diff:'olympic', name:'Olympic III', boost:1.1 }, { diff:'olympic', name:'Olympic Legends', boost:1.15 } ];
+if (typeof S.div!=='number') S.div = S.diff==='olympic' ? 2 : S.diff==='club' ? 1 : 0;
+S.div=Math.max(0,Math.min(DIVS.length-1,S.div|0)); S.diff=DIVS[S.div].diff;
+const divOf = se => DIVS[se && typeof se.div==='number' ? se.div : (se && se.diff==='olympic' ? 2 : se && se.diff==='club' ? 1 : 0)] || DIVS[0];
+const seasonCfg = () => ({ qlen:S.qlen, size:S.size, diff:DIVS[S.div].diff, div:S.div });
+// at the end of a season: 50% or better moves you up a division (checked once per season)
+function checkPromotion(se){
+  if (!se || !se.done || se.promoChecked) return;
+  const me=se.rec[HOME_ID], g=me.w+me.l; se.promoChecked=true;
+  const from = typeof se.div==='number' ? se.div : S.div;
+  if (g && me.w/g>=0.5 && from>=S.div && S.div<DIVS.length-1){ S.div=from+1; S.diff=DIVS[S.div].diff; se.promoted=S.div; saveS(); }
+  saveSeason();
+}
 if (!S.soundFix){ S.sound=true; S.music=true; S.soundFix=1; saveS(); }   // sound back on once (it was easy to mute by accident before the first click)
 if (!S.lv2){ S.lv2=1; S.pxp=0; S.gear=null; }          // new player-level system: everyone starts at Level 1
 if (typeof S.pxp!=='number') S.pxp=0;
@@ -2613,7 +2658,7 @@ function pickChallenges(){
 function pickChStar(){ return 2 + Math.floor(Math.random()*5); }   // one of the five starters
 function chLabel(id, num){ const c=CHALLENGES[id]; return c.text({ starName:S.roster[(num||2)-1]||'Your team' }); }
 function homeCfg(){ const g=gear(), c=itemOf('cap',g.cap), su=itemOf('suit',g.suit); return { name:S.team.trim()||'Ngen Aquatics', short:shortOf(S.team), cap:c.base, capD:c, suitD:su, gear:g.extra, logo:itemOf('logo',g.logo), numCol:c.num, roster:S.roster, star:S.star, trim: g.extra==='goldears' ? '#ffd23f' : null }; }
-function rivalCfg(id){ const c=teamCfg(id); c.rating*=rivalMul(plLevel()); return c; }
+function rivalCfg(id, div){ const c=teamCfg(id); c.rating*=rivalMul(plLevel())*(div||DIVS[S.div]).boost; return c; }
 function awayCfg(){ return rivalCfg((LEAGUE_TEAMS[S.opp]||LEAGUE_TEAMS[0]).id); }
 /* ---- season storage ---- */
 const SEASON_KEY='ngenh2o.season.v1';
@@ -2683,7 +2728,7 @@ function drawWorld(){
   ctx.fillStyle=grd; ctx.fillRect(px0,py0,px1-px0,py1-py0);
   // painted pool floor: team name
   ctx.save(); ctx.globalAlpha=0.13; ctx.fillStyle='#03304f'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  const [cx,cy]=w2s(12.5,10); ctx.font=`${Math.round(Sc*2.1)}px ${FONT_D}`; ctx.fillText(T(0).name.toUpperCase(),cx,cy-Sc*3.6); ctx.fillText('NGEN H2O',cx,cy+Sc*3.8); ctx.restore();
+  const [cx,cy]=w2s(12.5,10); ctx.font=`${Math.round(Sc*2.1)}px ${FONT_D}`; ctx.fillText(T(0).name.toUpperCase(),cx,cy-Sc*3.6); ctx.fillText(G.o && G.o.final ? 'CHAMPIONSHIP FINAL' : 'NGEN H2O',cx,cy+Sc*3.8); ctx.restore();
   // team logos painted on the pool floor
   { const L0=T(0).logo, L1=T(1).logo;
     if (L0 && L1){ for (const t of G.teams){ const [lx,ly]=w2s(t.dir>0?6.25:18.75,10); drawLogo(ctx, t.logo, lx, ly, Sc*1.6, 0.28); } }
@@ -2999,11 +3044,55 @@ function ballPainter(c, sx, by, r, skin, a){
   c.fillStyle='rgba(255,255,255,0.7)'; c.beginPath(); c.arc(sx-r*0.35,by-r*0.35,r*0.22,0,6.283); c.fill();
 }
 
+/* ---- surprise pool events ---- */
+const EVENTS={
+  night:{ title:'🌙 NIGHT GAME!', sub:'Glow caps on. Play under the lights!' },
+  wave: { title:'🌊 WAVE POOL!', sub:'Big waves push everyone around. Ride them!' },
+  beach:{ title:'🏖️ BEACH PARTY!', sub:'Giant beach ball and extra power-ups!' },
+};
+function drawEventBack(){
+  const ev=G.event; if (!ev) return;
+  const [x0,y0]=w2s(0,0), [x1,y1]=w2s(RULES.L,RULES.W);
+  if (ev==='wave'){
+    ctx.save(); ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=Math.max(2,Sc*0.12); ctx.lineCap='round';
+    for (let gx=0; gx<=RULES.L; gx+=1.6){ ctx.beginPath();
+      for (let gy=0.4; gy<=RULES.W-0.4; gy+=0.5){ const c=waveCur(gx); const [sx,sy]=w2s(gx+Math.sin(gy*0.9+G.t*2)*0.25, gy+((G.t*c*0.8)%2)); if (gy===0.4) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy); }
+      ctx.stroke(); }
+    // arrows showing which way the water flows right now
+    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font=`${Math.round(Sc*0.9)}px ${FONT_D}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    for (let gx=3; gx<RULES.L; gx+=6.3){ const c=waveCur(gx), [sx,sy]=w2s(gx,10+Math.sin(G.t)*0.5); ctx.fillText(c>0.15?'⬇':c<-0.15?'⬆':'~', sx, sy); }
+    ctx.restore();
+  } else if (ev==='beach'){
+    const cols=['#ff4d5e','#ffd23f','#3fa7ff','#2fbf8f','#ff7ad9'];
+    [[2,1.2],[23,1.4],[3,18.8],[22,18.6]].forEach(([gx,gy],i)=>{ const [sx,sy]=w2s(gx+Math.sin(G.t*0.8+i)*0.15,gy+Math.cos(G.t*0.7+i)*0.1), r=Sc*0.55;
+      ctx.save(); ctx.lineWidth=r*0.55; ctx.strokeStyle=cols[i%cols.length]; ctx.beginPath(); ctx.arc(sx,sy,r,0,6.283); ctx.stroke();
+      ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=r*0.18; ctx.beginPath(); ctx.arc(sx,sy,r,G.t+i,G.t+i+1); ctx.stroke(); ctx.restore(); });
+  } else if (ev==='night'){
+    ctx.save(); ctx.fillStyle='rgba(4,10,40,0.66)'; ctx.fillRect(Math.min(x0,x1)-Sc*3,Math.min(y0,y1)-Sc*3,Math.abs(x1-x0)+Sc*6,Math.abs(y1-y0)+Sc*6);
+    const [bx,by]=w2s(G.ball.x,G.ball.y), g=ctx.createRadialGradient(bx,by,Sc*0.5,bx,by,Sc*6);
+    g.addColorStop(0,'rgba(255,255,220,0.28)'); g.addColorStop(1,'rgba(255,255,220,0)');
+    ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(bx,by,Sc*6,0,6.283); ctx.fill();
+    // twinkling pool lights along the sides
+    for (let gx=1; gx<RULES.L; gx+=2){ for (const gy of [0.15,RULES.W-0.15]){ const [sx,sy]=w2s(gx,gy), a=0.5+0.5*Math.sin(G.t*3+gx); ctx.fillStyle=`rgba(127,214,255,${0.35+a*0.4})`; ctx.beginPath(); ctx.arc(sx,sy,Sc*0.18,0,6.283); ctx.fill(); } }
+    ctx.restore();
+  }
+}
+function drawGlow(p){            // night game: every swimmer glows in their cap color
+  if (G.event!=='night' || p.excl>0) return;
+  const t=T(p.team); let col = (!p.gk && t.capD && t.capD.c2) ? t.capD.c2 : capOf(p);
+  const hx=col.replace('#',''), lum=hx.length===6 ? (parseInt(hx.slice(0,2),16)*0.3+parseInt(hx.slice(2,4),16)*0.59+parseInt(hx.slice(4,6),16)*0.11)/255 : 1;
+  if (lum<0.3) col='#ffd23f';                     // dark caps glow gold so you can still see them
+  const [sx,sy]=w2s(p.x,p.y), g=ctx.createRadialGradient(sx,sy,Sc*0.3,sx,sy,Sc*1.6);
+  g.addColorStop(0,col); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.55; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,Sc*1.6,0,6.283); ctx.fill();
+  ctx.globalAlpha=0.9; ctx.strokeStyle=col==='#f7f8fc'?'#7fd6ff':col; ctx.lineWidth=Math.max(2,Sc*0.1); ctx.shadowColor=ctx.strokeStyle; ctx.shadowBlur=Sc*0.6; ctx.beginPath(); ctx.arc(sx,sy,Sc*0.75,0,6.283); ctx.stroke(); ctx.restore();
+}
 function drawBall(){
   const b=G.ball;
   const [sx,sy]=w2s(b.x,b.y);
   const giant = G.teams.some(t=>pw(t).mega>0);
-  const r=Sc*0.29*(1+b.z*0.12)*(giant?1.9:1);
+  const r=Sc*0.29*(1+b.z*0.12)*(giant?1.9:1)*(G.event==='beach'?1.6:1);
+  if (G.event==='night'){ ctx.save(); ctx.globalCompositeOperation='lighter'; const gg=ctx.createRadialGradient(sx,sy-b.z*Sc*0.75,r*0.5,sx,sy-b.z*Sc*0.75,r*3.5); gg.addColorStop(0,'rgba(255,240,150,0.7)'); gg.addColorStop(1,'rgba(255,240,150,0)'); ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(sx,sy-b.z*Sc*0.75,r*3.5,0,6.283); ctx.fill(); ctx.restore(); }
   ctx.fillStyle=`rgba(5,40,70,${clamp(0.35-b.z*0.08,0.08,0.35)})`;
   ctx.beginPath(); ctx.ellipse(sx,sy,r*1.05,r*0.7,0,0,6.283); ctx.fill();
   const by=sy-b.z*Sc*0.75;
@@ -3484,7 +3573,7 @@ function buildMenu(){
   const se=SEASON, sr=se ? se.rec[HOME_ID] : null;
   $('starBar').innerHTML = levelBarHTML(S.pxp);
   syncLockerBtn();
-  $('recordLine').innerHTML = `All-time record <b>${S.record.w}–${S.record.l}</b>` + (sr ? ` · Season ${se.n} <b>${sr.w}–${sr.l}</b>${se.done?' (finished)':''}` : '');
+  $('recordLine').innerHTML = `Division <b>${DIVS[S.div].name}</b> · All-time record <b>${S.record.w}–${S.record.l}</b>${S.trophies?` · 🏆 <b>${S.trophies}</b>`:''}` + (sr ? ` · Season ${se.n} <b>${sr.w}–${sr.l}</b>${se.done?' (finished)':''}` : '');
 }
 function buildStar(){
   const sel=$('starSel'), n=(S.size===6?6:5); sel.innerHTML='';
@@ -3495,7 +3584,7 @@ function buildStar(){
 function readMenu(){
   S.team='Ngen Aquatics';
   S.opp=+$('oppSel').value||0;
-  S.diff=(document.querySelector('input[name=diff]:checked')||{}).value||'rookie';
+  S.diff=DIVS[S.div].diff;
   S.qlen=30;
   S.size=+((document.querySelector('input[name=size]:checked')||{}).value||5);
   S.learn=true; S.size=5; S.star=2; S.roster=DEFAULT_ROSTER.slice();
@@ -3573,14 +3662,25 @@ function startMatch(m){
     const se=SEASON, pr=se && homeGameOf(se, se.round);
     if (!pr){ openSeason(); return; }
     if (se.chFor!==se.round || !se.ch || !se.chStar){ se.ch=pickChallenges(); se.chStar=pickChStar(); se.chFor=se.round; saveSeason(); }
-    newGame({ home:{ ...homeCfg(), leagueId:HOME_ID }, away:rivalCfg(pr[1]), diff:se.diff, qlen:30, size:se.size, learn:S.learn, league:{ round:se.round, n:se.n }, ...extrasCfg(se.ch, se.chStar) });
+    newGame({ home:{ ...homeCfg(), leagueId:HOME_ID }, away:rivalCfg(pr[1], divOf(se)), diff:divOf(se).diff, qlen:30, size:se.size, learn:S.learn, league:{ round:se.round, n:se.n }, event:weekEvent(se, se.round), ...extrasCfg(se.ch, se.chStar) });
+  } else if (curMode.mode==='final'){
+    const se=SEASON, F=se && se.final;
+    if (!F || F.played || (F.h!==HOME_ID && F.a!==HOME_ID)){ openSeason(); return; }
+    const oppId = F.h===HOME_ID ? F.a : F.h, away=rivalCfg(oppId, divOf(se)); away.rating*=1.05;     // the other finalist plays its best game
+    if (!F.ch){ F.ch=pickChallenges(); F.chStar=pickChStar(); saveSeason(); }
+    newGame({ home:{ ...homeCfg(), leagueId:HOME_ID }, away, diff:divOf(se).diff, qlen:30, size:se.size, learn:S.learn, final:{ n:se.n }, event:'night', ...extrasCfg(F.ch, F.chStar) });
   } else {
-    newGame({ home:{ ...homeCfg(), leagueId:HOME_ID }, away:awayCfg(), diff:S.diff, qlen:30, size:S.size, learn:S.learn, ...extrasCfg(pickChallenges()) });
+    newGame({ home:{ ...homeCfg(), leagueId:HOME_ID }, away:awayCfg(), diff:DIVS[S.div].diff, qlen:30, size:S.size, learn:S.learn, event:(S.games>=2 && Math.random()<0.3) ? pick3Event() : null, ...extrasCfg(pickChallenges()) });
   }
+  if (G.o.final) banner('🏆 CHAMPIONSHIP FINAL', 'Night game under the lights. Win it all!', '#ffd23f', 3.4);
+  else if (G.event) banner(EVENTS[G.event].title, EVENTS[G.event].sub, '#ffd23f', 3);
   running=true; paused=false;
   $('menu').hidden=true; $('end').hidden=true; $('pause').hidden=true; $('season').hidden=true; $('pauseBtn').hidden=false;
   rotateHint(); syncFsBtn();
 }
+function pick3Event(){ return ['night','wave','beach'][Math.floor(Math.random()*3)]; }
+// about 1 in 3 season games is a surprise event (not in your very first games)
+function weekEvent(se, r){ se.ev=se.ev||{}; if (!(r in se.ev)){ se.ev[r] = ((S.games||0)>=2 && Math.random()<0.35) ? pick3Event() : null; saveSeason(); } return se.ev[r]; }
 function startDemo(){
   newGame({ home:homeCfg(), away:teamCfg((LEAGUE_TEAMS[S.opp]||LEAGUE_TEAMS[0]).id), diff:'club', qlen:600, demo:true, size:S.size });
   running=false;
@@ -3685,12 +3785,18 @@ function showEnd(){
     G.recorded=true;
     if (won) S.record.w++; else S.record.l++;
     gained=(G.ch||[]).filter(c=>c.done).length; S.stars+=gained; S.games=(S.games||0)+1; G.starsGained=gained;
-    const X=PL.xp, parts=[['Played',X.play]]; if (won) parts.push(['Win!',X.win]);
+    const X=PL.xp, parts=[['Played',X.play]]; if (won) parts.push(['Win!',X.win]); if (G.o.final) parts.push(won ? ['Champions! 🏆',60] : ['Made the final',20]);
     if (h.score) parts.push([`${h.score} goal${h.score>1?'s':''}`, Math.min(X.goalCap, h.score*X.goal)]);
     if (gained) parts.push([`${gained} star${gained>1?'s':''}`, gained*X.star]);
     if (h.stats.steals) parts.push(['Steals', Math.min(X.stealCap, h.stats.steals*X.steal)]);
     const tot=parts.reduce((a,b)=>a+b[1],0); G.xpRes={ before:S.pxp, after:S.pxp+tot, parts, tot }; S.pxp+=tot;
     saveS();
+    if (G.o.final && SEASON && SEASON.n===G.o.final.n && SEASON.final && !SEASON.final.played){
+      const F=SEASON.final, homeIsH=F.h===HOME_ID, sc=[h.score,a.score];
+      Object.assign(F,{ played:true, hs: homeIsH?sc[0]:sc[1], as: homeIsH?sc[1]:sc[0], so: G.so ? (homeIsH?[G.so.kicks[0].filter(Boolean).length,G.so.kicks[1].filter(Boolean).length]:[G.so.kicks[1].filter(Boolean).length,G.so.kicks[0].filter(Boolean).length]) : null, winner: won?HOME_ID:(homeIsH?F.a:F.h) });
+      if (won){ S.trophies=(S.trophies||0)+1; saveS(); }
+      saveSeason();
+    }
     if (G.o.league && SEASON && SEASON.n===G.o.league.n && SEASON.round===G.o.league.round){
       const se=SEASON, r=se.round;
       applyResult(se, matchSummary(), r);
@@ -3701,11 +3807,13 @@ function showEnd(){
     }
   }
   if (G.o.league && SEASON){ const R_=SEASON.rec[HOME_ID]; leagueNote=` · Season record ${R_.w}–${R_.l}`; }
-  $('againBtn').textContent = G.o.league ? 'CONTINUE SEASON' : 'PLAY AGAIN';
-  $('endTitle').textContent = won ? 'VICTORY!' : 'NICE TRY!';
+  $('againBtn').textContent = G.o.league ? 'CONTINUE SEASON' : G.o.final ? 'BACK TO SEASON' : 'PLAY AGAIN';
+  $('endTitle').textContent = G.o.final ? (won ? 'CHAMPIONS!' : 'SO CLOSE!') : (won ? 'VICTORY!' : 'NICE TRY!');
+  $('trophyCard').hidden = !(G.o.final && won);
+  if (G.o.final && won){ $('trophyN').textContent = `Season ${G.o.final.n} champions · ${S.trophies||1} trophy${(S.trophies||1)>1?' wins':''} in your cabinet`; setTimeout(()=>{ SFX.unlock(); SFX.cheer(); }, 500); }
   $('endHome').textContent=h.name; $('endAway').textContent=a.name;
   $('endScore').textContent=`${h.score} – ${a.score}`;
-  const so=G.so; $('endNote').textContent = so ? `Decided by penalty shootout (${so.kicks[0].filter(Boolean).length}–${so.kicks[1].filter(Boolean).length}). ${DIFFS[S.diff].name} difficulty.` : `${DIFFS[S.diff].name} difficulty`;
+  const so=G.so; $('endNote').textContent = so ? `Decided by penalty shootout (${so.kicks[0].filter(Boolean).length}–${so.kicks[1].filter(Boolean).length}). ${((G.o.league||G.o.final)?divOf(SEASON):DIVS[S.div]).name} division.` : `${((G.o.league||G.o.final)?divOf(SEASON):DIVS[S.div]).name} division`;
   const rows=[['shots','Shots'],['saves','Saves'],['steals','Steals'],['exclDrawn','Exclusions drawn'],['pens','Penalties won']];
   $('endStats').innerHTML = rows.map(([k,l])=>`<tr><td>${h.stats[k]}</td><td>${l}</td><td>${a.stats[k]}</td></tr>`).join('');
   $('endNote').textContent += leagueNote;
@@ -3722,6 +3830,7 @@ function showEnd(){
   $('chEnd').innerHTML = (G.ch||[]).map((c,i)=>`<div class="row2 ${c.done?'done':''}" style="animation-delay:${i*0.15}s"><span class="st" style="animation-delay:${0.2+i*0.25}s">★</span><span>${esc(c.text)}</span><span class="pg">${c.done?'Done!':`${c.prog}/${c.need}`}</span></div>`).join('')
     + `<div class="earned">${gained ? `+${gained} star${gained>1?'s':''}! (+${gained*PL.xp.star} XP)` : 'No stars this time. Try again!'}</div>`;
   renderXP(G.xpRes);
+  $('rematchBtn').hidden=true;
   $('replayBtn').hidden = !G.best;
   $('end').hidden=false; $('end').scrollTop=0;
 }
@@ -3830,7 +3939,7 @@ $('resumeBtn').onclick=togglePause;
 $('restartBtn').onclick=()=>{ $('pause').hidden=true; startMatch(); };
 $('pause').querySelector('.result').insertAdjacentHTML('afterend','<p class="hint" id="pauseNote" style="text-align:center;margin:0"></p>');
 $('quitBtn').onclick=toMenu;
-$('againBtn').onclick=()=>{ if (NET.again){ NET.again=false; $('end').hidden=true; NET.tries=0; openOnline(); return; } if (G && G.o.league){ $('end').hidden=true; openSeason(); } else startMatch(); };
+$('againBtn').onclick=()=>{ if (NET.again){ NET.again=false; $('end').hidden=true; NET.tries=0; openOnline(); return; } if (G && (G.o.league || G.o.final)){ $('end').hidden=true; openSeason(); } else startMatch(); };
 $('menuBtn').onclick=toMenu;
 $('pauseBtn').onclick=togglePause;
 
@@ -3847,17 +3956,18 @@ function playerName(P){ if (P.team===HOME_ID){ const nm=S.roster[P.num-1]; retur
 function tchip(id){ const t=teamInfo(id); return `<span class="tchip" style="background:${t.col}">${esc(t.short)}</span>`; }
 let seaTab='table', resetArmed=false;
 function openSeason(){
-  if (!SEASON || SEASON.v!==1){ SEASON=newSeason(1,{ qlen:S.qlen, size:S.size, diff:S.diff }); saveSeason(); }
+  if (!SEASON || SEASON.v!==1){ SEASON=newSeason(1,seasonCfg()); saveSeason(); }
   $('menu').hidden=true; $('end').hidden=true; $('season').hidden=false; $('season').scrollTop=0;
   resetArmed=false; $('seaReset').textContent='Start a new season';
   renderSeason();
   if (SEASON.pending && SEASON.pending.length) runPending();
 }
+function st_place(se){ const p=standings(se).findIndex(x=>x.id===HOME_ID)+1; return p+(['th','st','nd','rd'][p%10>3||[11,12,13].includes(p)?0:p%10]); }
 function seasonHome(){ return SEASON.rounds.map((rd,i)=>({ r:i, g:homeGameOf(SEASON,i) })).filter(x=>x.g); }
 function renderSeason(simMsg){
   const se=SEASON, me=se.rec[HOME_ID], weeks=seasonHome(), played=me.w+me.l;
   $('seaTitle').textContent=`SEASON ${se.n}`;
-  $('seaSub').textContent=`${DIFFS[se.diff]?DIFFS[se.diff].name:'Rookie'} · ${teamInfo(HOME_ID).name} ${me.w}–${me.l} · Earn ★ by finishing challenges`;
+  $('seaSub').textContent=`${divOf(se).name} division · ${teamInfo(HOME_ID).name} ${me.w}–${me.l} · Earn ★ by finishing challenges`;
   $('seaForm').innerHTML=weeks.map((w,i)=>{ const res=se.results.find(x=>x.r===w.r && (x.h===HOME_ID||x.a===HOME_ID)); if (!res) return `<span>${i+1}</span>`; const mine=res.h===HOME_ID; const won=(mine?res.hs>res.as:res.as>res.hs) || (res.so && (mine?res.so[0]>res.so[1]:res.so[1]>res.so[0])); return `<span class="${won?'W':'L'}" title="Week ${i+1}">${won?'W':'L'}</span>`; }).join('');
   // next game / progress / champion
   let next='';
@@ -3870,18 +3980,43 @@ function renderSeason(simMsg){
   } else if (!se.done){
     const pr=homeGameOf(se,se.round), wk=weeks.findIndex(w=>w.r===se.round)+1, op=teamInfo(pr[1]), orec=se.rec[pr[1]];
     if (se.chFor!==se.round || !se.ch || !se.chStar){ se.ch=pickChallenges(); se.chStar=pickChStar(); se.chFor=se.round; saveSeason(); }
-    next=`<div class="nextCard"><div><div class="wk">WEEK ${wk} OF ${weeks.length}</div><div class="vs">vs ${esc(op.name)}</div><div class="meta">${orec.w}–${orec.l} this season · <span class="stars" aria-label="strength">${stars(op.rating)}</span></div>
+    const evw=weekEvent(se, se.round);
+    next=`<div class="nextCard"><div><div class="wk">WEEK ${wk} OF ${weeks.length}${evw?` · <span class="evTag">${EVENTS[evw].title}</span>`:''}</div><div class="vs">vs ${esc(op.name)}</div><div class="meta">${orec.w}–${orec.l} this season · <span class="stars" aria-label="strength">${stars(op.rating)}</span></div>
       <div class="chList">${se.ch.map(id=>`<span><b>☆</b> ${esc(chLabel(id, se.chStar))}</span>`).join('')}</div></div><button class="btn go" id="seaPlay">PLAY</button></div>`
       + (recapHtml ? `<div><div class="lbl" style="margin-bottom:6px">Latest results</div>${recapHtml}</div>` : '');
+  } else if (!se.final || !se.final.played){
+    checkPromotion(se);
+    if (!se.final){ const st0=standings(se); se.final={ h:st0[0].id, a:st0[1].id, played:false }; saveSeason(); }
+    const F=se.final, mine=F.h===HOME_ID||F.a===HOME_ID, A=teamInfo(F.h), B=teamInfo(F.a);
+    const gp=me.w+me.l, need=Math.ceil(gp/2);
+    const promo = typeof se.promoted==='number' ? `<div class="promo up">⬆️ PROMOTED to the <b>${esc(DIVS[se.promoted].name)}</b> division for next season!</div>`
+      : `<div class="promo">Regular season ${me.w}–${me.l}. Win at least ${need} of ${gp} next season to move up a division.</div>`;
+    next=`<div class="champ fin"><div class="t1">🏆 CHAMPIONSHIP FINAL</div><div class="t2">${esc(A.name)} <span style="opacity:.6">vs</span> ${esc(B.name)}</div>
+      <div style="font:800 15px var(--body)">#1 vs #2 after the regular season · a night game under the lights</div>
+      ${mine ? `<div style="font:800 15px var(--body)">${esc(teamInfo(HOME_ID).name)} made the final! Win it to lift the trophy!</div>` : `<div style="font:800 15px var(--body)">${esc(teamInfo(HOME_ID).name)} finished ${st_place(se)}. Let's see who wins it all!</div>`}
+      ${promo}
+      <div class="btns" style="justify-content:center"><button class="btn go" id="${mine?'seaFinal':'seaWatch'}" style="flex:0 1 320px">${mine?'PLAY THE FINAL':'WATCH THE FINAL'}</button></div></div>`;
   } else {
+    checkPromotion(se);
     const st=standings(se), ch=st[0], place=st.findIndex(x=>x.id===HOME_ID)+1, ci=teamInfo(ch.id);
-    next=`<div class="champ"><div class="t1">SEASON ${se.n} CHAMPIONS</div><div class="t2">${esc(ci.name)}</div><div style="font:800 15px var(--body)">${ch.w}–${ch.l} · ${fmtPct(ch.pct)}${ch.id===HOME_ID?' · What a season!':''}</div>
+    const gp=me.w+me.l, need=Math.ceil(gp/2), curD=divOf(se);
+    const promo = typeof se.promoted==='number'
+      ? `<div class="promo up">⬆️ PROMOTED to the <b>${esc(DIVS[se.promoted].name)}</b> division! Next season the other teams are tougher.</div>`
+      : (gp && se.rec[HOME_ID].w>=need && (typeof se.div==='number'?se.div:0)>=DIVS.length-1)
+        ? `<div class="promo up">👑 You're in the top division. Keep winning!</div>`
+        : `<div class="promo">Win at least ${need} of ${gp} games to move up to the <b>${esc((DIVS[Math.min(DIVS.length-1,(typeof se.div==='number'?se.div:S.div)+1)]||curD).name)}</b> division. You can do it!</div>`;
+    const FF=se.final, fw=FF.winner, fl=fw===FF.h?FF.a:FF.h, fsc=fw===FF.h?`${FF.hs}–${FF.as}`:`${FF.as}–${FF.hs}`, wi=teamInfo(fw);
+    next=`<div class="champ"><div class="t1">SEASON ${se.n} CHAMPIONS 🏆</div><div class="t2">${esc(wi.name)}</div><div style="font:800 15px var(--body)">Beat ${esc(teamInfo(fl).name)} ${fsc}${FF.so?' in a shootout':''} in the final${fw===HOME_ID?' · WHAT A SEASON!':''}</div>
       <div style="font:800 14px var(--body)">${esc(teamInfo(HOME_ID).name)} finished ${place}${['th','st','nd','rd'][place%10>3||[11,12,13].includes(place)?0:place%10]} of ${st.length} (${me.w}–${me.l})</div>
+      ${promo}
       <div class="btns" style="justify-content:center"><button class="btn go" id="seaNew" style="flex:0 1 320px">START SEASON ${se.n+1}</button></div></div>` + (recapHtml ? `<div><div class="lbl" style="margin-bottom:6px">Final week results</div>${recapHtml}</div>` : '');
   }
   $('seaNext').innerHTML=next;
   if ($('seaPlay')) $('seaPlay').onclick=()=>startMatch({ mode:'league' });
-  if ($('seaNew')) $('seaNew').onclick=()=>{ SEASON=newSeason(se.n+1,{ qlen:S.qlen, size:S.size, diff:S.diff }); saveSeason(); renderSeason(); };
+  if ($('seaFinal')) $('seaFinal').onclick=()=>startMatch({ mode:'final' });
+  if ($('seaWatch')) $('seaWatch').onclick=()=>{ $('seaWatch').disabled=true; $('seaWatch').textContent='Playing the final…';
+    setTimeout(()=>{ const F=SEASON.final, sum=simLeagueGame(F.h, F.a, SEASON, SEASON.n*7919+3); Object.assign(F,{ played:true, hs:sum.score[0], as:sum.score[1], so:sum.so, winner: sum.winner===0?F.h:F.a }); saveSeason(); renderSeason(); }, 60); };
+  if ($('seaNew')) $('seaNew').onclick=()=>{ SEASON=newSeason(se.n+1,seasonCfg()); saveSeason(); renderSeason(); };
   // highlights
   const ps=Object.values(se.ps), st=standings(se);
   const top=(k,f)=>ps.filter(f||(()=>true)).sort((a,c)=>c[k]-a[k] || a.gp-c.gp)[0];
@@ -3926,7 +4061,7 @@ $('seaTabs').addEventListener('click',e=>{ const b=e.target.closest('button[data
 $('seaMenu').onclick=toMenu;
 $('seaReset').onclick=()=>{
   if (!resetArmed){ resetArmed=true; $('seaReset').textContent='Tap again to erase this season'; return; }
-  SEASON=newSeason((SEASON?SEASON.n:0)+1,{ qlen:S.qlen, size:S.size, diff:S.diff }); saveSeason(); resetArmed=false; $('seaReset').textContent='Start a new season'; renderSeason();
+  SEASON=newSeason((SEASON?SEASON.n:0)+1,seasonCfg()); saveSeason(); resetArmed=false; $('seaReset').textContent='Start a new season'; renderSeason();
 };
 let simming=false;
 // Plays the computer-vs-computer games of the week with the real engine, a slice at a time so the screen stays responsive.
@@ -3937,7 +4072,7 @@ function runPending(){
   function nextGame(){
     if (!se.pending.length){
       simming=false;
-      if (se.round>=se.rounds.length) se.done=true;
+      if (se.round>=se.rounds.length){ se.done=true; checkPromotion(se); }
       saveSeason(); renderSeason(); return;
     }
     const [r,h,a]=se.pending[0], keep=G;
@@ -4091,14 +4226,16 @@ $('onChange').onclick=()=>{ netClose(); NET.phase='idle'; onView('onSetup'); bui
 function renderLobby(){
   const L=NET.lobby, me=S.netName||'';
   const myRec = NET.me ? `${NET.me.w}–${NET.me.l}` : `${S.online.w}–${S.online.l}`;
-  $('onMe').innerHTML=`<b>${esc(me)}</b><span>Online record ${myRec}</span>`;
+  $('onMe').innerHTML=`<b>${esc(me)}${L.week&&L.week.king===me?' 👑':''}</b><span>Online record ${myRec}</span>`;
   const others=(L.players||[]).filter(p=>p.name.toLowerCase()!==me.toLowerCase()).sort((a,b)=>a.busy-b.busy || a.name.localeCompare(b.name));
   const live = NET.phase==='lobby';
   $('onList').innerHTML = !live ? '' : others.length ? others.map(p=>`
-    <div class="onP ${p.busy?'busy':''}"><span class="dot" aria-hidden="true"></span><div class="who"><b>${logoChip(p.logo)}${esc(p.name)}</b><span>${p.w}–${p.l}${p.busy?' · playing a game':''}</span></div>
+    <div class="onP ${p.busy?'busy':''}"><span class="dot" aria-hidden="true"></span><div class="who"><b>${logoChip(p.logo)}${esc(p.name)}${L.week&&L.week.king===p.name?' 👑':''}</b><span>${p.w}–${p.l}${p.busy?' · playing a game':''}</span></div>
     ${p.busy ? '' : `<button class="btn small chal" data-n="${esc(p.name)}" ${NET.pendingTo?'disabled':''}>CHALLENGE</button>`}</div>`).join('')
     : `<p class="hint" style="margin:0;text-align:center">Nobody else is online yet. Ask a teammate to open Ngen H2O and go online!</p>`;
   $('onListWrap').hidden=!live;
+  const W=L.week||{}, king=W.king, kw=king && (W.list||[]).find(x=>x.name===king);
+  $('onKing').hidden=!live; $('onKing').innerHTML = king ? `👑 King of the Pool this week: <b>${esc(king)}</b> · ${kw.w} win${kw.w>1?'s':''}<br><span style="font-weight:700">Win the most online games this week to take the crown!</span>` : `👑 No King of the Pool yet this week. Win a game to grab the crown!`;
   $('onList').querySelectorAll('.chal').forEach(b=>b.onclick=()=>{ SFX.init(); if (!isFs()) goFullscreen(); NET.pendingTo=b.dataset.n; netSend({ t:'challenge', to:b.dataset.n }); showChal('out', b.dataset.n); renderLobby(); });
   const mine=(L.recent||[]).filter(r=>[r.w,r.l].some(n=>n.toLowerCase()===me.toLowerCase())).slice(0,8);
   const all=(L.recent||[]).slice(0,10);
@@ -4111,7 +4248,7 @@ function renderLobby(){
   const on=new Set((L.players||[]).map(p=>p.name.toLowerCase()));
   const rows=[...recs.values()].sort((a,b)=>b.w-a.w || a.l-b.l || a.name.localeCompare(b.name));
   $('onBoard').innerHTML = rows.length ? rows.map((r,i)=>{ const g=r.w+r.l, pc=g?Math.round(r.w/g*100)+'%':'–';
-    return `<tr class="${r.name.toLowerCase()===me.toLowerCase()?'me':''}"><td>${i===0&&r.w?'🥇':i+1}</td><td>${logoChip(r.logo)}${esc(r.name)}${on.has(r.name.toLowerCase())?'<span class="od" aria-label="online"></span>':''}</td><td>${r.w}</td><td>${r.l}</td><td>${pc}</td></tr>`; }).join('')
+    return `<tr class="${r.name.toLowerCase()===me.toLowerCase()?'me':''}"><td>${i===0&&r.w?'🥇':i+1}</td><td>${logoChip(r.logo)}${esc(r.name)}${L.week&&L.week.king===r.name?' 👑':''}${on.has(r.name.toLowerCase())?'<span class="od" aria-label="online"></span>':''}</td><td>${r.w}</td><td>${r.l}</td><td>${pc}</td></tr>`; }).join('')
     : `<tr class="none"><td colspan="5">No games yet</td></tr>`;
   $('onBoardWrap').hidden=!live;
   $('online').querySelector('.card').classList.toggle('wide', live);
@@ -4165,7 +4302,7 @@ function netMessage(m){
     if (m.why==='elsewhere'){ onStatus('Signed out here', msg, false); $('onRetry').hidden=false; return; }
     onView('onSetup'); buildSetup(msg); onStatusHide(); if (!$('online').hidden) return; $('end').hidden=true; $('online').hidden=false;
   }
-  else if (m.t==='lobby'){ NET.lobby={ players:m.players||[], recent:m.recent||[], board:m.board||[] }; const meP=NET.lobby.players.find(p=>p.name===S.netName); if (meP) NET.me={ w:meP.w, l:meP.l }; renderLobby(); }
+  else if (m.t==='lobby'){ NET.lobby={ players:m.players||[], recent:m.recent||[], board:m.board||[], week:m.week||null }; const meP=NET.lobby.players.find(p=>p.name===S.netName); if (meP) NET.me={ w:meP.w, l:meP.l }; renderLobby(); }
   else if (m.t==='challenged'){ NET.incoming=m.from; showChal('in', m.from); }
   else if (m.t==='cancelled'){ if (NET.chalKind==='in'){ hideChal(); toast2(`${m.from} cancelled the challenge.`); } NET.incoming=null; }
   else if (m.t==='pending'){ }
@@ -4181,15 +4318,42 @@ function netMessage(m){
     running=true; paused=false;
     $('online').hidden=true; $('menu').hidden=true; $('end').hidden=true; $('pause').hidden=true; $('pauseBtn').hidden=false;
     const other=m.names[1-m.team];
-    banner(`vs ${other.toUpperCase()}`, `You are ${m.team===0?'DARK':'WHITE'} caps · get ready!`, '#ffd23f', 3);
+    NET.lastOpp=other;
+    banner(`vs ${other.toUpperCase()}`, G.event ? EVENTS[G.event].title+' '+EVENTS[G.event].sub : `Get ready!`, '#ffd23f', 3.4);
     SFX.whistle(true); rotateHint(); syncFsBtn();
     voiceStart();
   }
   else if (m.t==='s'){ if (G && G.netClient) netApply(m.d); }
   else if (m.t==='end'){ NET.phase='lobby'; voiceStop(); const won=m.winner===NET.team; if (won) S.online.w++; else S.online.l++; if (m.me) NET.me=m.me; saveS(); setTimeout(()=>netEnd(m), 600); }
   else if (m.t==='left'){ NET.phase='lobby'; voiceStop(); netEnd(null, 'Your opponent left the game.'); }
+  else if (m.t==='emote'){ showEmote(m.team, m.e|0); }
   else if (m.t==='peerMic'){ VOICE.peerOn=m.on; const o=otherName(); if (G && G.netClient) toast(m.on ? (VOICE.on ? `🎤 ${o} turned their mic on. You can talk!` : `🎤 ${o} turned their mic on. Tap 🎤 to talk back!`) : `${o} turned their mic off`); }
 }
+/* ---- emoji reactions (fixed list: no typing, kid-safe) ---- */
+const EMOTES=['👍','😂','😮','🔥','😭','🎉','👏 Nice shot!','🤝 GG!'];
+function buildEmoTray(){ $('emoTray').innerHTML=EMOTES.map((e,i)=>`<button type="button" role="menuitem" data-i="${i}" class="${e.length>3?'txt':''}" title="${i+1}">${e}</button>`).join('');
+  $('emoTray').querySelectorAll('button').forEach(b=>b.onclick=ev=>{ ev.preventDefault(); sendEmote(+b.dataset.i); $('emoTray').hidden=true; $('emoBtn').setAttribute('aria-expanded','false'); }); }
+let lastEmote=0;
+function sendEmote(i){ if (!(G && G.netClient) || performance.now()-lastEmote<1200) return; lastEmote=performance.now(); netSend({ t:'emote', e:i }); showEmote(NET.team, i); }
+function showEmote(team, i){ if (!G) return; (G.emo=G.emo||[]).push({ team, i, t:0 }); if (G.emo.length>4) G.emo.shift(); SFX.click(); }
+function drawEmotes(dt){
+  if (!G || !G.emo || !G.emo.length) return;
+  G.emo=G.emo.filter(e=>(e.t+=dt)<2.4);
+  for (const e of G.emo){
+    const left = e.team===0, x = left ? VW*0.3 : VW*0.7, s=Math.min(1, e.t*6), fade=Math.min(1,(2.4-e.t)*3), y = HUD+70 - e.t*10;
+    const txt=EMOTES[e.i], big=txt.length<=3, name=(NET.names||[])[e.team]||'';
+    ctx.save(); ctx.globalAlpha=fade; ctx.translate(x,y); ctx.scale(s,s);
+    ctx.font = big ? `44px ${EMOJI_FONT}` : `400 24px ${FONT_D}`; const w=Math.max(70, ctx.measureText(txt).width+28), h=big?64:46;
+    ctx.fillStyle='#ffffff'; ctx.strokeStyle='#0b1e33'; ctx.lineWidth=3; rrect(-w/2,-h/2,w,h,18); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(left?-w/2+18:w/2-18, -h/2); ctx.lineTo(left?-w/2+10:w/2-10, -h/2-12); ctx.lineTo(left?-w/2+30:w/2-30, -h/2); ctx.fill(); ctx.stroke();
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#0b1e33'; ctx.fillText(txt, 0, 2);
+    if (name){ ctx.font=`900 12px ${FONT_B}`; ctx.fillStyle='#ffffff'; ctx.strokeStyle='#0b1e33'; ctx.lineWidth=3; ctx.strokeText(name,0,h/2+12); ctx.fillText(name,0,h/2+12); }
+    ctx.restore();
+  }
+}
+$('emoBtn').onclick=e=>{ e.preventDefault(); const open=$('emoTray').hidden; if (open) buildEmoTray(); $('emoTray').hidden=!open; $('emoBtn').setAttribute('aria-expanded', String(open)); };
+window.addEventListener('keydown',e=>{ if (G && G.netClient && NET.phase==='playing' && /^Digit[1-8]$/.test(e.code)) sendEmote(+e.code.slice(5)-1); });
+$('rematchBtn').onclick=()=>{ const o=NET.lastOpp; if (!o || !NET.ws) return; SFX.init(); if (!isFs()) goFullscreen(); NET.pendingTo=o; netSend({ t:'challenge', to:o }); showChal('out', o); };
 function toast2(msg){ if (!$('online').hidden){ onStatus(msg, '', false); setTimeout(()=>{ if (NET.phase==='lobby') onStatus('You are online ✓', 'Tap CHALLENGE next to a teammate to play.', false); }, 3500); } else if (G && running) toast(msg); }
 function netInputTick(){
   // turn this frame's button presses into a message for the server (sent ~30 times a second)
@@ -4215,7 +4379,8 @@ function netEnd(m, why){
   for (const id of ['chEnd','endStarBar','endStats']) $(id).innerHTML='';
   if (!why && m){ const X=PL.xp, parts=[['Online game',X.online]]; if (won) parts.push(['Win!',X.onlineWin]); const tot=parts.reduce((a,b)=>a+b[1],0); const r={ before:S.pxp, after:S.pxp+tot, parts, tot }; S.pxp+=tot; saveS(); renderXP(r); }
   $('lvEnd').hidden=true; $('unlockCard').hidden=true; $('endPlayersWrap').hidden=true; $('endLearn').hidden=true; $('replayBtn').hidden=true;
-  $('againBtn').textContent='BACK TO LOBBY'; NET.again=true;
+  $('againBtn').textContent='BACK TO LOBBY'; NET.again=true; $('trophyCard').hidden=true;
+  $('rematchBtn').hidden = !(NET.lastOpp && NET.ws && NET.ws.readyState===1 && why!=='Connection lost.'); $('rematchBtn').textContent=`REMATCH vs ${(NET.lastOpp||'').toUpperCase()}`;
   $('end').hidden=false;
 }
 $('onlineBtn').onclick=()=>{ SFX.init(); NET.tries=0; openOnline(); };
@@ -4263,6 +4428,7 @@ function adpcmDecode(u8){
 function otherName(){ return NET.names ? NET.names[1-NET.team] : 'The other player'; }
 function voiceStart(){
   voiceStop(true);
+  $('emoBtn').hidden=false;
   $('micBtn').hidden=false; syncMic(); VOICE.told={}; VOICE.peerOn=false; VOICE.next=0;
   // voice chat is on by default (like a speakerphone): turn the mic on as the game starts; 🎤 mutes it
   setTimeout(()=>{ if (G && G.netClient && NET.phase==='playing' && !VOICE.on) micToggle(true); }, 800);
@@ -4334,7 +4500,7 @@ function voiceStop(keepBtn){
   VOICE.proc=VOICE.src=VOICE.sink=null;
   if (VOICE.stream){ VOICE.stream.getTracks().forEach(t=>t.stop()); VOICE.stream=null; }
   VOICE.on=false; VOICE.peerOn=false; VOICE.buf=[]; VOICE.phase=0; VOICE.next=0;
-  if (!keepBtn){ $('micBtn').hidden=true; } syncMic();
+  if (!keepBtn){ $('micBtn').hidden=true; $('emoBtn').hidden=true; $('emoTray').hidden=true; } syncMic();
 }
 $('micBtn').onclick=e=>{ e.preventDefault(); micToggle(); };
 
@@ -4453,15 +4619,15 @@ function frame(now){
     ctx.setTransform(DPR,0,0,DPR,0,0);
     const sh=G.shake>0 ? G.shake*14 : 0;
     ctx.save(); if (sh) ctx.translate(R(-sh,sh),R(-sh,sh));
-    drawWorld();
+    drawWorld(); drawEventBack();
     const list=[]; for (const t of G.teams) for (const p of t.players) list.push(p);
     for (const p of list) if (p.excl>0) drawExcluded(p);
     const live=list.filter(p=>p.excl<=0).sort((a,c)=>a.y-c.y);
     drawPU(); drawDucks(); drawPassArrow(); drawGoalTarget();
-    live.forEach(drawPlayer); live.forEach(drawIce); live.forEach(drawTag); drawPassBubble();
+    live.forEach(drawGlow); live.forEach(drawPlayer); live.forEach(drawIce); live.forEach(drawTag); drawPassBubble();
     drawBall(); drawParticles();
     ctx.restore();
-    if (!G.demo && !RP) { drawHUD(); drawTouch(); drawButtons(el); }
+    if (!G.demo && !RP) { drawHUD(); drawEmotes(el); drawTouch(); drawButtons(el); }
   }
   requestAnimationFrame(frame);
 }

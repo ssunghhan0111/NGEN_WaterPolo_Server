@@ -50,11 +50,26 @@ const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 const send = (ws, msg) => { if (ws && ws.readyState === 1) ws.send(typeof msg === 'string' ? msg : JSON.stringify(msg)); };
 const byName = name => [...players].find(p => p.name.toLowerCase() === String(name || '').toLowerCase());
 
+// King of the Pool: most online wins this week (weeks start Monday, Los Angeles time)
+function weekStart(now = Date.now()){
+  const local = new Date(new Date(now).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const shift = local.getTime() - now, day = (local.getDay() + 6) % 7;
+  local.setHours(0, 0, 0, 0); local.setDate(local.getDate() - day);
+  return local.getTime() - shift;
+}
+function weekBoard(){
+  const since = weekStart(), t = {};
+  for (const r of store.history()) { if (r.ts < since) continue;
+    (t[r.w] = t[r.w] || { name: r.w, w: 0, l: 0 }).w++; (t[r.l] = t[r.l] || { name: r.l, w: 0, l: 0 }).l++; }
+  const list = Object.values(t).sort((a, b) => b.w - a.w || a.l - b.l || a.name.localeCompare(b.name));
+  return { since, list, king: list.length && list[0].w > 0 ? list[0].name : null };
+}
 function lobbyMsg(){
   return JSON.stringify({ t: 'lobby',
     players: [...players].map(p => { const r = store.recOf(p.name); return { name: p.name, w: r.w, l: r.l, busy: !!p.match, logo: p.logo }; }),
     recent: store.history().slice(0, 40),
-    board: store.all().map(r => ({ name: r.name, w: r.w, l: r.l, logo: r.logo || null })) });
+    board: store.all().map(r => ({ name: r.name, w: r.w, l: r.l, logo: r.logo || null })),
+    week: weekBoard() });
 }
 let lobbyTimer = null;
 function broadcastLobby(){            // batch quick changes into one update
@@ -79,6 +94,11 @@ wss.on('connection', (ws) => {
     } else if (m.t === 'challenge') challenge(player, m.to);
     else if (m.t === 'answer') answer(player, !!m.ok);
     else if (m.t === 'cancel') cancelOutgoing(player, 'cancelled');
+    else if (m.t === 'emote') {                                 // quick emoji reactions (fixed list, no typing)
+      const mt = player.match, e = m.e | 0; if (!mt || e < 0 || e > 7) return;
+      const now = Date.now(); if (now - (player.lastEmote || 0) < 1200) return; player.lastEmote = now;
+      send(mt.players[1 - player.team].ws, { t: 'emote', e, team: player.team });
+    }
     else if (m.t === 'mic') {                                   // tell the other player the mic went on/off
       const mt = player.match; if (!mt) return;
       send(mt.players[1 - player.team].ws, { t: 'peerMic', on: !!m.on });
@@ -160,7 +180,7 @@ function startMatch(a, b){
   const E = makeEngine();
   const seed = Math.floor(Math.random() * 1e9);
   const teamCfg = (pl, i) => ({ logo: pl.logo || null, gear: pl.gear || {}, name: pl.name, short: pl.name.split(' ')[0].toUpperCase().slice(0, 8), cap: i === 0 ? '#1f3c8f' : '#f7f8fc', numCol: i === 0 ? '#ffffff' : '#0b1e33' });
-  const cfg = { home: teamCfg(a, 0), away: teamCfg(b, 1), ...MATCH_SETTINGS, seed, ball: (a.gear && a.gear.ball) || 'classic' };
+  const cfg = { home: teamCfg(a, 0), away: teamCfg(b, 1), ...MATCH_SETTINGS, seed, ball: (a.gear && a.gear.ball) || 'classic', event: Math.random() < 0.3 ? ['night', 'wave', 'beach'][Math.floor(Math.random() * 3)] : null };
   const match = { id: seed, players: [a, b], engine: null, E, cfg, inputs: [null, null], countdown: COUNTDOWN, tick: 0, ended: false };
   a.match = b.match = match; a.team = 0; b.team = 1;
   for (const [i, pl] of [a, b].entries()) send(pl.ws, { t: 'match', team: i, names: [a.name, b.name], cfg });

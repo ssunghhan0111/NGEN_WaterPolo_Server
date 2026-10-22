@@ -11,14 +11,15 @@ A cartoon water polo game for the web. Play as **Ngen Aquatics** against the com
 ## What's in the game
 
 - **5 vs 5 water polo** with real rules: shot clock, exclusions, the 2 m and 5 m lines, and penalty shootouts for ties
-- **Season mode:** play 8 rival teams, with standings, stats and league leaders
+- **Season mode:** play 8 rival teams, with standings, stats and league leaders. The top 2 meet in a **Championship Final** under the lights, and the winner lifts the trophy 🏆
+- **Surprise games:** some games are a 🌙 night game (glowing caps), a 🌊 wave pool (currents push everyone) or a 🏖️ beach party (giant beach ball, extra power-ups)
 - **Levels & locker:** start at Level 1 and level up as you play. 30 levels unlock over 100 items: patterned caps, swim suits, balls, team logos, goal parties and extras. Rival teams get a little tougher each level
 - **Online 1v1:** pick your name, see who's online, and challenge a teammate. Talk with the 🎤 button. Records and match history are saved
 - **Super Shot**, **power-ups** (turbo, mega ball, freeze, rubber duck, octopus) and **Mega Goalie** after a goal against
 - **Goal celebrations** for every player, an announcer who calls names, and the team cheer at the end: *"Ngen on me, Ngen on three… one, two, three, NGEN!"*
 - **Star challenges** every game for bonus XP
 - **Learn mode** with quick tips about the rules
-- Three levels: **Rookie** (the default), **Club** and **Olympic**
+- **Divisions:** everyone starts in **Rookie**. Finish a season winning at least half your games to move up: Club → Olympic → Olympic II → Olympic III → Olympic Legends
 
 ## How to play
 
@@ -39,6 +40,7 @@ Sprinting uses energy. A tired swimmer slows down, and a tired shooter misses mo
 - In a game, tap 🎤 to talk. The mic is off until you turn it on. Voice goes through the game server, so it works on any network where the game works.
 - Online, each player's team wears their own locker items: caps, suits, extras and team logo (if both pick the same cap, the second team wears white).
 - Every result is saved, like *"Ian lost to Jayden 3–5 · 2026/10/21 10:00 AM"*, and everyone's online record shows in the lobby.
+- Send emoji reactions with 😀 (or keys 1–8), tap **REMATCH** after a game, and win the most games in a week to become 👑 **King of the Pool**.
 - The server runs the match, so both players always see the same game.
 
 ---
