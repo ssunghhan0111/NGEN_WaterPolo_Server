@@ -345,10 +345,10 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
       <div class="howto">
         <h4>Controls</h4>
         <div class="keys">
-          <span><kbd>WASD</kbd> / <kbd>Arrows</kbd></span><span>Swim</span>
-          <span><kbd>J</kbd> / <kbd>Space</kbd></span><span>Pass (aim with direction) · on defense: switch swimmer · teammate has ball: call for it</span>
-          <span><kbd>K</kbd> hold</span><span>Shoot: charge and release (up/down picks the corner, a quick tap lobs) · on defense: tackle</span>
-          <span><kbd>Shift</kbd> / <kbd>L</kbd></span><span>Sprint. Every swimmer has an energy bar: sprinting drains it, a tired swimmer swims slower until it refills</span>
+          <span><kbd>Arrows</kbd></span><span>Swim</span>
+          <span><kbd>A</kbd> / <kbd>Space</kbd></span><span>Pass (aim with direction) · on defense: switch swimmer · teammate has ball: call for it</span>
+          <span><kbd>S</kbd> hold</span><span>Shoot: charge and release (up/down picks the corner, a quick tap lobs) · on defense: tackle</span>
+          <span><kbd>D</kbd> / <kbd>Shift</kbd></span><span>Sprint. Every swimmer has an energy bar: sprinting drains it, a tired swimmer swims slower until it refills</span>
           <span><kbd>Esc</kbd> / <kbd>P</kbd></span><span>Pause</span>
           <span>🧤 Mega goalie</span><span>After a goal, the goalie who got scored on turns MEGA for 10 seconds: bigger, and about 35% more saves. Pass it around before you shoot!</span>
           <span>🫧 Power-ups</span><span>Swim through a floating bubble to grab Turbo, Mega Ball, Freeze, Duck Attack or Octopus Arms for your team.</span>
@@ -2880,10 +2880,10 @@ function drawHUD(){
       const [mx,my]=w2s(gx,P.aimY);
       ctx.strokeStyle='#ff6a4d'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(mx,my,Sc*0.35,0,6.283); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(mx-Sc*0.55,my); ctx.lineTo(mx+Sc*0.55,my); ctx.moveTo(mx,my-Sc*0.55); ctx.lineTo(mx,my+Sc*0.55); ctx.stroke();
-      hint(touchMode ? 'Tap SHOOT when the target is where you want it' : 'Press K / Space when the target is where you want it');
+      hint(touchMode ? 'Tap SHOOT when the target is where you want it' : 'Press S when the target is where you want it');
     } else if (opp(P.team).id===G.humanId){
       for (const d of [-1,0,1]){ const [mx,my]=w2s(gx-t.dir*0.2,10+d*1.12); ctx.fillStyle = P.chosen && P.dive===d ? '#ffd23f' : 'rgba(255,255,255,0.35)'; ctx.strokeStyle='#0b1e33'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(mx,my,Sc*0.3,0,6.283); ctx.fill(); ctx.stroke(); }
-      hint(touchMode ? 'Goalie: push UP or DOWN to pick a dive, tap a button to stay central' : 'Goalie: hold UP or DOWN to pick your dive, K to stay central');
+      hint(touchMode ? 'Goalie: push UP or DOWN to pick a dive, tap a button to stay central' : 'Goalie: hold UP or DOWN to pick your dive, S to stay central');
     }
   }
   // banners
@@ -2910,7 +2910,7 @@ function drawHUD(){
   });
   drawTracker();
   if (G.coach) drawCoach(G.coach);
-  if (!touchMode && G.state==='play' && G.t<14 && G.quarter===1 && !G.demo) hint('WASD swim · J pass/switch · hold K shoot/tackle · Shift sprint · Esc pause');
+  if (!touchMode && G.state==='play' && G.t<14 && G.quarter===1 && !G.demo) hint('Arrows swim · A pass/switch · hold S shoot/tackle · D sprint · P pause');
 }
 function wrapText(txt, maxW){
   const words=txt.split(' '), lines=[]; let cur='';
@@ -3108,7 +3108,7 @@ function actionSet(){
   return { mode:'loose', b:'GRAB', a:'SWITCH', s:'SPRINT' };
 }
 const BTN_COL={ SUPER:'#ff7ad9', SHOOT:'#ffd23f', PASS:'#f2fdff', CALL:'#f2fdff', SPRINT:'#7fd6ff', TACKLE:'#ff6a4d', GRAB:'#ff9f45', SWITCH:'#cfeef7', STAY:'#ffd23f' };
-const BTN_KEY={ a:'J', b:'K', s:'SHIFT' };
+const BTN_KEY={ a:'A', b:'S', s:'D' };
 const BTN_ANIM={ a:{l:null,t:9}, b:{l:null,t:9}, s:{l:null,t:9} };
 const MOUSE={ a:false, b:false, s:false };
 let rawA=false;
@@ -3196,7 +3196,7 @@ window.addEventListener('keydown',e=>{
   if (e.target && (e.target.tagName==='INPUT' || e.target.tagName==='SELECT')) return;
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
   keys[e.code]=true; touchMode=false; SFX.init();
-  if (overlay && !e.repeat && ['KeyJ','KeyK','Space','Enter'].includes(e.code)){
+  if (overlay && !e.repeat && ['KeyA','KeyS','Space','Enter'].includes(e.code)){
     e.preventDefault();
     if (overlay==='teach') closeOverlay();
     else if (overlay==='quiz' && !$('quizNext').hidden) closeOverlay();
@@ -3210,9 +3210,10 @@ window.addEventListener('blur',()=>{ for (const k in keys) keys[k]=false; });
 let prevA=false, prevB=false, prevStart=false, inputSwallow=false;
 function pollInput(){
   let mx=0,my=0;
-  if (keys.KeyA||keys.ArrowLeft) mx-=1; if (keys.KeyD||keys.ArrowRight) mx+=1;
-  if (keys.KeyW||keys.ArrowUp) my-=1; if (keys.KeyS||keys.ArrowDown) my+=1;
-  let a = !!(keys.KeyJ||keys.Space), b = !!(keys.KeyK||keys.Enter||keys.NumpadEnter), sprint=!!(keys.ShiftLeft||keys.ShiftRight||keys.KeyL);
+  // arrow keys swim · A pass · S shoot/tackle · D or Shift sprint
+  if (keys.ArrowLeft) mx-=1; if (keys.ArrowRight) mx+=1;
+  if (keys.ArrowUp) my-=1; if (keys.ArrowDown) my+=1;
+  let a = !!(keys.KeyA||keys.Space), b = !!(keys.KeyS||keys.Enter||keys.NumpadEnter), sprint=!!(keys.KeyD||keys.ShiftLeft||keys.ShiftRight);
   if (TOUCH.stick!=null){ const J=stickLayout(), dx=TOUCH.cx-J.x, dy=TOUCH.cy-J.y, d=hyp(dx,dy); if (d>J.r*0.15){ const m=Math.min(1,d/(J.r*0.75)); mx+=dx/d*m; my+=dy/d*m; } }
   a = a || TOUCH.a || MOUSE.a; b = b || TOUCH.b || MOUSE.b; sprint = sprint || TOUCH.sprint || MOUSE.s;
   let start=false;
@@ -3331,7 +3332,7 @@ async function say(key){
 function startMatch(m){
   if (m && m.mode) curMode=m;
   closeOverlay(); quizUsed=[];
-  if (COARSE && !isFs()) goFullscreen();
+  if (!isFs()) goFullscreen();          // phones and computers both go full screen
   if (!$('menu').hidden) readMenu();
   SFX.init();
   if (curMode.mode==='league'){
@@ -3808,7 +3809,7 @@ function renderLobby(){
     ${p.busy ? '' : `<button class="btn small chal" data-n="${esc(p.name)}" ${NET.pendingTo?'disabled':''}>CHALLENGE</button>`}</div>`).join('')
     : `<p class="hint" style="margin:0;text-align:center">Nobody else is online yet. Ask a teammate to open Ngen H2O and go online!</p>`;
   $('onListWrap').hidden=!live;
-  $('onList').querySelectorAll('.chal').forEach(b=>b.onclick=()=>{ SFX.init(); NET.pendingTo=b.dataset.n; netSend({ t:'challenge', to:b.dataset.n }); showChal('out', b.dataset.n); renderLobby(); });
+  $('onList').querySelectorAll('.chal').forEach(b=>b.onclick=()=>{ SFX.init(); if (!isFs()) goFullscreen(); NET.pendingTo=b.dataset.n; netSend({ t:'challenge', to:b.dataset.n }); showChal('out', b.dataset.n); renderLobby(); });
   const mine=(L.recent||[]).filter(r=>[r.w,r.l].some(n=>n.toLowerCase()===me.toLowerCase())).slice(0,8);
   const all=(L.recent||[]).slice(0,10);
   $('onMine').innerHTML = mine.length ? mine.map(r=>`<li>${fmtResult(r, me)}<small>${fmtWhen(r.ts)}</small></li>`).join('') : `<li class="none">No games yet. Challenge someone!</li>`;
@@ -3833,7 +3834,7 @@ function showChal(kind, name){
   else { $('chalT').textContent=`Challenging ${name}…`; $('chalS').textContent=`Waiting for ${name} to say yes.`; $('chalYes').hidden=true; $('chalNo').textContent='Cancel'; $('chalSpin').hidden=false; }
 }
 function hideChal(){ $('chal').hidden=true; NET.chalKind=null; }
-$('chalYes').onclick=()=>{ SFX.init(); netSend({ t:'answer', ok:true }); NET.incoming=null; hideChal(); };
+$('chalYes').onclick=()=>{ SFX.init(); if (!isFs()) goFullscreen(); netSend({ t:'answer', ok:true }); NET.incoming=null; hideChal(); };
 $('chalNo').onclick=()=>{
   if (NET.chalKind==='in'){ netSend({ t:'answer', ok:false }); NET.incoming=null; }
   else { netSend({ t:'cancel' }); NET.pendingTo=null; renderLobby(); }
@@ -3883,7 +3884,7 @@ function netMessage(m){
   else if (m.t==='match'){
     NET.phase='playing'; NET.team=m.team; NET.names=m.names; NET.a=0; NET.b=0; NET.pendingTo=null; hideChal();
     SFX.init();
-    if (COARSE && !isFs()) goFullscreen();
+    if (!isFs()) goFullscreen();          // phones and computers both go full screen
     newGame({ ...m.cfg, net:undefined, netClient:{ team:m.team } });
     G.state='break'; G.stateT=0;
     running=true; paused=false;
@@ -3891,13 +3892,13 @@ function netMessage(m){
     const other=m.names[1-m.team];
     banner(`vs ${other.toUpperCase()}`, `You are ${m.team===0?'DARK':'WHITE'} caps · get ready!`, '#ffd23f', 3);
     SFX.whistle(true); rotateHint(); syncFsBtn();
-    voiceStart(m.team===0);
+    voiceStart(m.team===0, m.ice);
   }
   else if (m.t==='s'){ if (G && G.netClient) netApply(m.d); }
   else if (m.t==='end'){ NET.phase='lobby'; voiceStop(); const won=m.winner===NET.team; if (won) S.online.w++; else S.online.l++; if (m.me) NET.me=m.me; saveS(); setTimeout(()=>netEnd(m), 600); }
   else if (m.t==='left'){ NET.phase='lobby'; voiceStop(); netEnd(null, 'Your opponent left the game.'); }
   else if (m.t==='rtc'){ voiceSignal(m.d); }
-  else if (m.t==='peerMic'){ const o=NET.names ? NET.names[1-NET.team] : 'They'; if (G && G.netClient) toast(m.on ? `🎤 ${o} turned their mic on` : `${o} turned their mic off`); }
+  else if (m.t==='peerMic'){ VOICE.peerOn=m.on; const o=otherName(); voicePlay(); if (G && G.netClient) toast(m.on ? (VOICE.on ? `🎤 ${o} turned their mic on. You can talk!` : `🎤 ${o} turned their mic on. Tap 🎤 to talk back!`) : `${o} turned their mic off`); }
 }
 function toast2(msg){ if (!$('online').hidden){ onStatus(msg, '', false); setTimeout(()=>{ if (NET.phase==='lobby') onStatus('You are online ✓', 'Tap CHALLENGE next to a teammate to play.', false); }, 3500); } else if (G && running) toast(msg); }
 function netInputTick(){
@@ -3933,25 +3934,47 @@ $('onSetupBack').onclick=()=>{ NET.phase='idle'; netClose(); $('online').hidden=
 $('onRetry').onclick=()=>{ NET.tries=0; netConnect(); };
 
 /* ---- voice chat: audio goes straight between the two players' devices (WebRTC) ---- */
-const VOICE={ pc:null, stream:null, on:false, sender:null, audio:null, queue:[] };
-function voiceStart(initiator){
+const VOICE={ pc:null, stream:null, on:false, sender:null, audio:null, queue:[], ice:[], wa:null, peerOn:false, told:{} };
+function otherName(){ return NET.names ? NET.names[1-NET.team] : 'The other player'; }
+function voiceStart(initiator, ice){
   voiceStop(true);
   if (!window.RTCPeerConnection) return;
-  $('micBtn').hidden=false; syncMic();
+  $('micBtn').hidden=false; syncMic(); VOICE.told={}; VOICE.peerOn=false;
   let pc;
-  try { pc=new RTCPeerConnection({ iceServers:[{ urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302'] }] }); } catch(e){ return; }
+  const servers=[{ urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302'] }, ...(Array.isArray(ice)?ice:[])];
+  try { pc=new RTCPeerConnection({ iceServers:servers }); } catch(e){ return; }
   VOICE.pc=pc; VOICE.queue=[];
   pc.onicecandidate=e=>{ if (e.candidate) netSend({ t:'rtc', d:{ c:e.candidate } }); };
+  pc.onconnectionstatechange=()=>{
+    const st=pc.connectionState;
+    if (st==='failed' && !VOICE.told.failed){ VOICE.told.failed=true; if (G && G.netClient) toast("Voice chat can't connect on this network. The game still works!"); }
+  };
   pc.ontrack=e=>{
+    const stream=(e.streams && e.streams[0]) || new MediaStream([e.track]);
     if (!VOICE.audio){ VOICE.audio=document.createElement('audio'); VOICE.audio.autoplay=true; VOICE.audio.setAttribute('playsinline',''); document.body.appendChild(VOICE.audio); }
-    VOICE.audio.srcObject = (e.streams && e.streams[0]) || new MediaStream([e.track]);
-    VOICE.audio.play().catch(()=>{});
+    VOICE.audio.srcObject=stream; VOICE.audio.muted=false;
+    voicePlay();
   };
   if (initiator){
     const tr=pc.addTransceiver('audio', { direction:'sendrecv' }); VOICE.sender=tr.sender;
     pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>netSend({ t:'rtc', d:{ sdp:pc.localDescription } })).catch(()=>{});
   }
 }
+// Play the other player's voice. Phones may block it until the screen is tapped: then play it through
+// the game's own (already unlocked) audio, and try the normal way again on the next tap.
+function voicePlay(){
+  const el=VOICE.audio; if (!el || !el.srcObject) return;
+  el.play().then(()=>{ voiceWAoff(); }).catch(()=>{
+    voiceWAon();
+    if (!VOICE.retry){ VOICE.retry=()=>{ window.removeEventListener('pointerdown',VOICE.retry,true); VOICE.retry=null; if (VOICE.audio && VOICE.audio.srcObject) VOICE.audio.play().then(voiceWAoff).catch(()=>{}); };
+      window.addEventListener('pointerdown',VOICE.retry,true); }
+  });
+}
+function voiceWAon(){
+  const ac=SFX.raw(); if (!ac || VOICE.wa || !VOICE.audio) return;
+  try{ const src=ac.createMediaStreamSource(VOICE.audio.srcObject), g=ac.createGain(); g.gain.value=1.4; src.connect(g); g.connect(ac.destination); VOICE.wa={ src, g }; VOICE.audio.muted=true; VOICE.audio.play().catch(()=>{}); }catch(e){}
+}
+function voiceWAoff(){ if (!VOICE.wa) return; try{ VOICE.wa.src.disconnect(); VOICE.wa.g.disconnect(); }catch(e){} VOICE.wa=null; if (VOICE.audio) VOICE.audio.muted=false; }
 async function voiceSignal(d){
   const pc=VOICE.pc; if (!pc || !d) return;
   try{
@@ -3974,16 +3997,21 @@ async function micToggle(){
       return;
     }
     VOICE.on=true; if (VOICE.sender) VOICE.sender.replaceTrack(VOICE.stream.getAudioTracks()[0]).catch(()=>{});
+    toast(VOICE.peerOn ? `🎤 Mic on: you and ${otherName()} can talk!` : `🎤 Mic on. ${otherName()} needs to tap 🎤 too so you can hear them.`);
   } else {
     VOICE.on=false; if (VOICE.sender) VOICE.sender.replaceTrack(null).catch(()=>{});
+    toast('Mic off');
   }
+  voicePlay();       // this tap also unlocks the other player's voice on phones
   netSend({ t:'mic', on:VOICE.on }); syncMic();
 }
 function syncMic(){ const b=$('micBtn'); b.classList.toggle('on', VOICE.on); b.setAttribute('aria-pressed', String(VOICE.on)); b.setAttribute('aria-label', VOICE.on ? 'Mic on: tap to mute' : 'Mic off: tap to talk'); b.title=b.getAttribute('aria-label'); }
 function voiceStop(keepBtn){
   if (VOICE.pc){ try{ VOICE.pc.close(); }catch(e){} VOICE.pc=null; }
   if (VOICE.stream){ VOICE.stream.getTracks().forEach(t=>t.stop()); VOICE.stream=null; }
-  VOICE.on=false; VOICE.sender=null; VOICE.queue=[];
+  voiceWAoff();
+  if (VOICE.retry){ window.removeEventListener('pointerdown',VOICE.retry,true); VOICE.retry=null; }
+  VOICE.on=false; VOICE.sender=null; VOICE.queue=[]; VOICE.peerOn=false;
   if (VOICE.audio){ VOICE.audio.srcObject=null; }
   if (!keepBtn){ $('micBtn').hidden=true; } syncMic();
 }

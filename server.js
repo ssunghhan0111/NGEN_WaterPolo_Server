@@ -22,6 +22,10 @@ function makeEngine(){ const m = { exports: {} }; new Function('module', ENGINE_
 
 const TICK = 1 / 60, SNAP_EVERY = 3, COUNTDOWN = 3.2, MATCH_SETTINGS = { diff: 'rookie', qlen: 30, size: 5 };
 const CHALLENGE_TIMEOUT = 30000;
+// Voice chat relay ("TURN") servers, so voice works when players are on different networks.
+// Paste the iceServers list from a free TURN provider (e.g. Metered) into the ICE_SERVERS setting on Render.
+let ICE = [];
+try { if (process.env.ICE_SERVERS) { ICE = JSON.parse(process.env.ICE_SERVERS); if (!Array.isArray(ICE)) ICE = [ICE]; } } catch (e) { console.log('ICE_SERVERS is not valid JSON, voice relay is off'); }
 const players = new Set();   // everyone in the lobby (welcomed)
 const matches = new Set();
 let nextId = 1;
@@ -35,7 +39,7 @@ function cleanName(n){
 
 // ---------- web page + health check ----------
 const server = http.createServer((req, res) => {
-  if (req.url === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end(`ok online=${players.size} matches=${matches.size} saved=${store.REMOTE ? 'upstash' : 'local'}`); }
+  if (req.url === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end(`ok online=${players.size} matches=${matches.size} saved=${store.REMOTE ? 'upstash' : 'local'} voiceRelay=${ICE.length ? 'on' : 'off'}`); }
   if (req.url === '/' || req.url.startsWith('/?') || req.url === '/index.html') {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
     return res.end(HTML);
@@ -149,7 +153,7 @@ function startMatch(a, b){
   const cfg = { home: teamCfg(a, 0), away: teamCfg(b, 1), ...MATCH_SETTINGS, seed };
   const match = { id: seed, players: [a, b], engine: null, E, cfg, inputs: [null, null], countdown: COUNTDOWN, tick: 0, ended: false };
   a.match = b.match = match; a.team = 0; b.team = 1;
-  for (const [i, pl] of [a, b].entries()) send(pl.ws, { t: 'match', team: i, names: [a.name, b.name], cfg });
+  for (const [i, pl] of [a, b].entries()) send(pl.ws, { t: 'match', team: i, names: [a.name, b.name], cfg, ice: ICE });
   matches.add(match);
   broadcastLobby();
   console.log(`match ${match.id}: ${a.name} vs ${b.name} (${matches.size} running)`);

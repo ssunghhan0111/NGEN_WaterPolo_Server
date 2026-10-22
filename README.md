@@ -24,11 +24,11 @@ A cartoon water polo game for the web. Play as **Ngen Aquatics** against the com
 
 | | Keyboard | Phone |
 |---|---|---|
-| Swim | WASD / arrow keys | Joystick (bottom left) |
-| Pass / switch swimmer | J or Space | PASS button |
-| Shoot / tackle | K or Enter (hold for power) | SHOOT / TACKLE button |
-| Sprint | Shift or L | SPRINT button |
-| Pause | Esc or P | ⏸ at the top |
+| Swim | Arrow keys | Joystick (bottom left) |
+| Pass / switch swimmer | A (or Space) | PASS button |
+| Shoot / tackle | S (hold for power) | SHOOT / TACKLE button |
+| Sprint | D (or Shift) | SPRINT button |
+| Pause | P | ⏸ at the top |
 
 Sprinting uses energy. A tired swimmer slows down, and a tired shooter misses more.
 
@@ -80,6 +80,7 @@ Hosted on [Render](https://render.com) on the free plan:
 | `TEAM_CODE` | The secret code players type to go online. If you don't set it, it's `NGEN`. |
 | `UPSTASH_REDIS_REST_URL` | From your free Upstash database: keeps records and history |
 | `UPSTASH_REDIS_REST_TOKEN` | From your free Upstash database |
+| `ICE_SERVERS` | Optional voice-chat relay (TURN) list, so voice works when players are on different networks |
 
 Without the Upstash keys the game still works, but records reset whenever the free server restarts.
 
