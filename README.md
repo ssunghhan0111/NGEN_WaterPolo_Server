@@ -35,7 +35,7 @@ Sprinting uses energy. A tired swimmer slows down, and a tired shooter misses mo
 
 ## Online play
 
-- The first time, pick your name from the list (or add a new one) and type the **team code**. Only people with the code can see who's online.
+- The first time, pick your name from the list (or add a new one). That's it, no code needed.
 - Tap **CHALLENGE** next to a teammate. They get a pop-up and can say yes or no.
 - In a game, tap 🎤 to talk. The mic is off until you turn it on. Voice goes through the game server, so it works on any network where the game works.
 - Online, each player's team wears their own locker items: caps, suits, extras and team logo (if both pick the same cap, the second team wears white).
@@ -63,7 +63,7 @@ npm install
 npm start
 ```
 
-Then open http://localhost:8787. To test online play, open it in two browser windows, go online with two different names (team code `NGEN` unless you set one) and challenge each other. Locally, records are saved in `data.json`.
+Then open http://localhost:8787. To test online play, open it in two browser windows, go online with two different names and challenge each other. Locally, records are saved in `data.json`.
 
 ## Update the live game
 
@@ -80,7 +80,6 @@ Hosted on [Render](https://render.com) on the free plan:
 
 | Key | What it's for |
 |---|---|
-| `TEAM_CODE` | The secret code players type to go online. If you don't set it, it's `NGEN`. |
 | `UPSTASH_REDIS_REST_URL` | From your free Upstash database: keeps records and history |
 | `UPSTASH_REDIS_REST_TOKEN` | From your free Upstash database |
 

@@ -1,6 +1,6 @@
 // Ngen H2O online server
 // - Serves the game page (so the server URL itself is playable)
-// - Lobby: players with the team code show up as "online"; tap someone to challenge them
+// - Lobby: everyone who goes online shows up; tap someone to challenge them
 // - Each match runs on the server with the real game engine (so both players see the same game),
 //   and sends a snapshot to both players 20 times a second
 // - Keeps everyone's online record and match history (see store.js)
@@ -14,7 +14,6 @@ const { WebSocketServer } = require('ws');
 const store = require('./store');
 
 const PORT = process.env.PORT || 8787;
-const TEAM_CODE = String(process.env.TEAM_CODE || 'NGEN').trim().toLowerCase();
 const HTML = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 const ENGINE_SRC = HTML.slice(HTML.indexOf('<script>') + 8, HTML.lastIndexOf('</script>'));
 // Each match gets its own copy of the engine (the engine keeps one game in memory at a time).
@@ -110,7 +109,6 @@ wss.on('connection', (ws) => {
 
 function hello(player, m){
   if (player.name) return;
-  if (String(m.code || '').trim().toLowerCase() !== TEAM_CODE) return send(player.ws, { t: 'denied', why: 'code' });
   const name = cleanName(m.name);
   if (!name) return send(player.ws, { t: 'denied', why: 'name' });
   const same = byName(name);
@@ -247,4 +245,4 @@ setInterval(() => {
 }, 25000);
 wss.on('connection', ws => { ws.on('pong', () => { ws._ngenDead = false; }); });
 
-store.load().then(() => server.listen(PORT, () => console.log(`Ngen H2O server on :${PORT} (team code required)`)));
+store.load().then(() => server.listen(PORT, () => console.log(`Ngen H2O server on :${PORT}`)));

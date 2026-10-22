@@ -477,11 +477,8 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
       <label class="lbl" for="onPick">Who are you?</label>
       <select id="onPick"></select>
       <div id="onNewWrap" hidden><input type="text" id="onNew" maxlength="12" placeholder="Type your first name" autocomplete="off"></div>
-      <label class="lbl" for="onCode">Team code</label>
-      <input type="text" id="onCode" maxlength="20" placeholder="Ask your coach or parent" autocomplete="off" autocapitalize="characters">
       <p class="onErr" id="onErr" role="alert" hidden></p>
       <div class="btns"><button class="btn go" id="onGo">GO ONLINE</button><button class="btn small" id="onSetupBack">Back</button></div>
-      <p class="hint" style="margin:0;text-align:center">Only players with your team code can see you.</p>
     </div>
     <div id="onLobby" hidden>
      <div class="onMain">
@@ -4198,12 +4195,11 @@ function buildSetup(err){
   sel.insertAdjacentHTML('beforeend', `<option value="">Choose your name…</option>` + names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('') + `<option value="__new">➕ Add a new name</option>`);
   sel.value = S.netName && names.includes(S.netName) ? S.netName : '';
   $('onNewWrap').hidden=true; $('onNew').value='';
-  $('onCode').value=S.teamCode||'';
   $('onErr').textContent=err||''; $('onErr').hidden=!err;
 }
 function openOnline(){
   $('menu').hidden=true; $('end').hidden=true; $('online').hidden=false; $('online').scrollTop=0;
-  if (!S.netName || !S.teamCode){ onView('onSetup'); buildSetup(); onStatusHide(); return; }
+  if (!S.netName){ onView('onSetup'); buildSetup(); onStatusHide(); return; }
   onView('onLobby'); renderLobby();
   if (!NET.ws) netConnect();
 }
@@ -4212,11 +4208,9 @@ $('onGo').onclick=()=>{
   let name=$('onPick').value;
   if (name==='__new') name=cleanName($('onNew').value);
   if (!name) return buildSetupErr($('onPick').value==='__new' ? 'Names use letters only, 2 to 12 letters.' : 'Pick your name first.');
-  const code=$('onCode').value.trim();
-  if (!code) return buildSetupErr('Type the team code (ask your coach or parent).');
   if (!TEAM_NAMES.includes(name) && !S.myNames.includes(name)) S.myNames.push(name);
-  const changed = name!==S.netName || code!==S.teamCode;
-  S.netName=name; S.teamCode=code; saveS();
+  const changed = name!==S.netName;
+  S.netName=name; saveS();
   if (changed) netClose();
   NET.tries=0; onView('onLobby'); renderLobby(); netConnect();
 };
@@ -4276,7 +4270,7 @@ function netConnect(){
   let ws;
   try { ws=new WebSocket(serverURL()); } catch(e){ return netFail(); }
   NET.ws=ws; ws.binaryType='arraybuffer';
-  ws.onopen=()=>{ NET.tries=0; NET.phase='hello'; ws.send(JSON.stringify({ t:'hello', v:3, name:S.netName, code:S.teamCode, logo:gear().logo, gear:gear() })); };
+  ws.onopen=()=>{ NET.tries=0; NET.phase='hello'; ws.send(JSON.stringify({ t:'hello', v:3, name:S.netName, logo:gear().logo, gear:gear() })); };
   ws.onmessage=(e)=>{ if (typeof e.data!=='string'){ voiceReceive(e.data); return; } let m; try{ m=JSON.parse(e.data); }catch(err){ return; } netMessage(m); };
   ws.onclose=()=>{ if (NET.ws!==ws) return; NET.ws=null; hideChal(); NET.pendingTo=null;
     if (NET.phase==='playing'){ NET.phase='idle'; netEnd(null, 'Connection lost.'); }
