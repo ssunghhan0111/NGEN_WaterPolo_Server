@@ -68,6 +68,11 @@ table.stats td:nth-child(2){color:#4a6378;font-size:12px;letter-spacing:.1em;tex
 .topbtn.mus{font:400 22px var(--display);position:relative}
 .topbtn.mus.off{color:#8aa3b3}
 .topbtn.mus.off::after{content:'';position:absolute;left:8px;right:8px;top:50%;height:3px;background:#e5383b;transform:rotate(-45deg);border-radius:2px}
+.sndHint{position:fixed;z-index:7;top:calc(env(safe-area-inset-top,0px) + 62px);right:calc(env(safe-area-inset-right,0px) + 10px);background:var(--sun);color:var(--ink);border:3px solid var(--ink);border-radius:14px;padding:6px 12px;font:900 13px var(--body);box-shadow:0 3px 0 var(--ink);pointer-events:none;animation:hintBob 1.6s ease-in-out infinite}
+.sndHint::before{content:'';position:absolute;top:-9px;right:74px;border:8px solid transparent;border-top:0;border-bottom-color:var(--ink)}
+@keyframes hintBob{50%{transform:translateY(3px)}}
+.topbtn.locked{animation:micPulse 1.4s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.sndHint,.topbtn.locked{animation:none}}
 .topbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
 .topbtn:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
 #sndBtn[aria-pressed=false]{background:#d7e3ea;color:#5d7486}
@@ -321,6 +326,7 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
 </style>
 
 <canvas id="cv" aria-label="Water polo pool"></canvas>
+<div id="sndHint" class="sndHint" hidden>Click anywhere for sound 🔊</div>
 <div id="topBtns">
   <button id="musBtn" class="topbtn mus" aria-pressed="true" aria-label="Music on" title="Music">♪</button>
   <button id="micBtn" class="topbtn mic" hidden aria-pressed="false" aria-label="Mic off: tap to talk">🎤</button>
@@ -2332,6 +2338,7 @@ let S = { team:'Ngen Aquatics', cap:'navy', opp:0, diff:'rookie', qlen:120, size
 try{ const raw=localStorage.getItem(STORE); if (raw){ const old=JSON.parse(raw); S={...S, ...old}; if (!old.sv){ S.diff='rookie'; S.sv=2; } } }catch(e){}
 if (!S.record) S.record={w:0,l:0};
 if (typeof S.stars!=='number') S.stars=0;
+if (!S.soundFix){ S.sound=true; S.music=true; S.soundFix=1; saveS(); }   // sound back on once (it was easy to mute by accident before the first click)
 if (!S.lv2){ S.lv2=1; S.pxp=0; S.gear=null; }          // new player-level system: everyone starts at Level 1
 if (typeof S.pxp!=='number') S.pxp=0;
 S.qlen=30;                      // 30-second quarters: short, snappy games
@@ -3507,11 +3514,17 @@ $('roster').addEventListener('input',()=>{ readMenu(); buildStar(); });
 $('sizeChips').addEventListener('change',()=>{ readMenu(); buildStar(); });
 $('swatches').addEventListener('change',()=>{ readMenu(); buildMenu(); });
 document.addEventListener('change',e=>{ if (e.target.closest && e.target.closest('#menu')) readMenu(); });
-$('sndBtn').onclick=$('soundBtn').onclick=$('soundBtn2').onclick=()=>{ S.sound=!S.sound; saveS(); syncSound(); SFX.init(); SFX.click(); };
+$('sndBtn').onclick=$('soundBtn').onclick=$('soundBtn2').onclick=()=>{
+  // before the first click the browser keeps the game silent: this click just starts the sound (it doesn't mute)
+  if (!SFX.raw() || audioJustStarted){ SFX.init(); S.sound=true; saveS(); syncSound(); syncAudioHint(); SFX.click(); return; }
+  S.sound=!S.sound; saveS(); syncSound(); SFX.init(); SFX.click(); };
+function syncAudioHint(){ const on=!SFX.raw() && S.sound; $('sndHint').hidden=!on; $('sndBtn').classList.toggle('locked', on); }
 function syncMusicBtn(){ const b=$('musBtn'), on=S.music!==false; b.classList.toggle('off',!on); b.setAttribute('aria-pressed',String(on)); b.setAttribute('aria-label', on?'Music on':'Music off'); b.title=on?'Music on':'Music off'; b.hidden=!S.sound; }
 $('musBtn').onclick=()=>{ S.music = S.music===false; saveS(); syncMusicBtn(); SFX.init(); };
 // browsers only allow sound after a tap or key press: start the audio (and the menu music) on the first one
-const firstTouch=()=>{ SFX.init(); window.removeEventListener('pointerdown',firstTouch,true); window.removeEventListener('keydown',firstTouch,true); };
+let audioJustStarted=false;
+const firstTouch=()=>{ audioJustStarted=true; setTimeout(()=>{ audioJustStarted=false; }, 600); SFX.init(); window.removeEventListener('pointerdown',firstTouch,true); window.removeEventListener('keydown',firstTouch,true); setTimeout(syncAudioHint,0); };
+setTimeout(syncAudioHint,0);
 window.addEventListener('pointerdown',firstTouch,true); window.addEventListener('keydown',firstTouch,true);
 document.addEventListener('visibilitychange',()=>{ const a=SFX.raw(); if (!a) return; if (document.hidden) a.suspend().catch(()=>{}); else a.resume().catch(()=>{}); });
 
@@ -4251,6 +4264,8 @@ function otherName(){ return NET.names ? NET.names[1-NET.team] : 'The other play
 function voiceStart(){
   voiceStop(true);
   $('micBtn').hidden=false; syncMic(); VOICE.told={}; VOICE.peerOn=false; VOICE.next=0;
+  // voice chat is on by default (like a speakerphone): turn the mic on as the game starts; 🎤 mutes it
+  setTimeout(()=>{ if (G && G.netClient && NET.phase==='playing' && !VOICE.on) micToggle(true); }, 800);
 }
 // mic -> 16 kHz -> skip silence -> compress -> server
 function voiceCapture(ac){
@@ -4294,22 +4309,22 @@ function voiceReceive(data){
   s.start(VOICE.next); VOICE.next+=b.duration;
   if (!VOICE.told.heard && G && G.netClient){ VOICE.told.heard=true; }
 }
-async function micToggle(){
+async function micToggle(auto){
   const ac=SFX.raw(); SFX.init();
   if (!VOICE.on){
     try{
       if (!VOICE.stream) VOICE.stream=await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true } });
     }catch(e){
-      toast(location.hostname.endsWith('onrender.com') ? 'The mic is blocked. Allow the microphone in your browser settings.' : 'The mic is blocked here. Try playing at ngen-waterpolo-server.onrender.com');
+      toast(location.hostname.endsWith('onrender.com') ? 'The mic is blocked. Allow the microphone in your browser settings, then tap 🎤.' : 'The mic is blocked here. Try playing at ngen-waterpolo-server.onrender.com');
       return;
     }
     const a=SFX.raw(); if (!a){ toast('Tap the screen once, then try the mic again.'); return; }
     if (!VOICE.proc) voiceCapture(a);
     VOICE.on=true;
-    toast(VOICE.peerOn ? `🎤 Mic on: you and ${otherName()} can talk!` : `🎤 Mic on. ${otherName()} can hear you now.`);
+    toast(auto ? `🎤 Voice chat is on. Say hi to ${otherName()}! Tap 🎤 to mute.` : (VOICE.peerOn ? `🎤 Mic on: you and ${otherName()} can talk!` : `🎤 Mic on. ${otherName()} can hear you now.`));
   } else {
     VOICE.on=false; VOICE.buf=[];
-    toast('Mic off');
+    toast('🔇 Muted. Tap 🎤 to talk again.');
   }
   netSend({ t:'mic', on:VOICE.on }); syncMic();
 }
