@@ -65,6 +65,9 @@ table.stats td{padding:6px 4px;border-bottom:2px dashed #b9dbe7;text-align:cente
 table.stats td:nth-child(2){color:#4a6378;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
 #topBtns{position:fixed;z-index:7;top:calc(env(safe-area-inset-top,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 10px);display:flex;flex-direction:row-reverse;gap:8px}
 .topbtn{width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);background:var(--foam);color:var(--ink);font:400 18px var(--display);box-shadow:0 3px 0 var(--ink);cursor:pointer;display:grid;place-items:center;padding:0;line-height:1}
+.topbtn.mus{font:400 22px var(--display);position:relative}
+.topbtn.mus.off{color:#8aa3b3}
+.topbtn.mus.off::after{content:'';position:absolute;left:8px;right:8px;top:50%;height:3px;background:#e5383b;transform:rotate(-45deg);border-radius:2px}
 .topbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
 .topbtn:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
 #sndBtn[aria-pressed=false]{background:#d7e3ea;color:#5d7486}
@@ -196,7 +199,21 @@ table.stats td:nth-child(2){color:#4a6378;font-size:12px;letter-spacing:.1em;tex
 .onMe b{font:400 24px var(--display);letter-spacing:.02em}
 .onMe span{font:800 13px var(--body);color:#4a6378}
 .onMeRow .btn{flex:0 0 auto;box-shadow:0 3px 0 var(--ink);padding:6px 12px;font-size:15px}
-#onLobby{display:grid;gap:12px}
+#onLobby{display:grid;gap:14px;align-items:start}
+.onMain{display:grid;gap:12px;min-width:0}
+.card.online.wide{max-width:900px}
+@media (min-width:760px){ #onLobby{grid-template-columns:minmax(0,1fr) 320px} .onBoard{position:sticky;top:0} }
+.onBoard{display:grid;gap:8px;background:#fff;border:3px solid var(--ink);border-radius:16px;padding:12px}
+.onBoardT{font:400 20px var(--display);letter-spacing:.03em;text-align:center}
+.onBoardTbl{width:100%;border-collapse:collapse;font:800 14px var(--body);font-variant-numeric:tabular-nums}
+.onBoardTbl th{font:900 11px var(--body);letter-spacing:.08em;color:#4a6378;text-align:right;padding:4px 6px;border-bottom:2px solid var(--ink)}
+.onBoardTbl td{text-align:right;padding:6px;border-bottom:1px solid #dbe8ef}
+.onBoardTbl th:nth-child(2),.onBoardTbl td:nth-child(2){text-align:left}
+.onBoardTbl th:first-child,.onBoardTbl td:first-child{text-align:center;width:24px}
+.onBoardTbl tr.me td{background:#fff6d1}
+.onBoardTbl td .od{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2fbf8f;margin-left:6px;vertical-align:middle}
+.onBoardTbl tr:nth-child(1) td:first-child{color:#d49b00}
+.onBoardTbl .none td{text-align:center;color:#6a8597}
 #onLobby[hidden]{display:none!important}
 .onList{display:grid;gap:8px;margin-top:6px}
 .onP{display:flex;align-items:center;gap:10px;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:8px 8px 8px 12px}
@@ -295,6 +312,7 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
 
 <canvas id="cv" aria-label="Water polo pool"></canvas>
 <div id="topBtns">
+  <button id="musBtn" class="topbtn mus" aria-pressed="true" aria-label="Music on" title="Music">♪</button>
   <button id="micBtn" class="topbtn mic" hidden aria-pressed="false" aria-label="Mic off: tap to talk">🎤</button>
   <button id="pauseBtn" class="topbtn" hidden aria-label="Pause">II</button>
   <button id="fsBtn" class="topbtn" hidden aria-label="Full screen">⛶</button>
@@ -429,6 +447,7 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
       <p class="hint" style="margin:0;text-align:center">Only players with your team code can see you.</p>
     </div>
     <div id="onLobby" hidden>
+     <div class="onMain">
       <div class="onMeRow"><div class="onMe" id="onMe"></div><button class="btn small" id="onChange">Change</button></div>
       <div class="onStatus" id="onState" role="status" aria-live="polite"><div class="spinner" id="onSpin" aria-hidden="true"></div><div><div id="onStatus">Connecting…</div><div class="hint" id="onSub"></div></div></div>
       <div id="onListWrap" hidden><div class="lbl">Online now</div><div class="onList" id="onList"></div></div>
@@ -438,6 +457,12 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
       </div>
       <div class="btns"><button class="btn small" id="onRetry" hidden>Try again</button><button class="btn small" id="onCancel">Back to menu</button></div>
       <p class="hint" style="margin:0;text-align:center">In a game, tap 🎤 to talk to the other player.</p>
+     </div>
+     <aside class="onBoard" id="onBoardWrap" hidden aria-labelledby="onBoardT">
+      <div class="onBoardT" id="onBoardT">🏆 TEAM RECORDS</div>
+      <table class="onBoardTbl"><thead><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Win %</th></tr></thead><tbody id="onBoard"></tbody></table>
+      <p class="hint" style="margin:0;text-align:center">🟢 = online now</p>
+     </aside>
     </div>
   </div>
 </div>
@@ -2107,7 +2132,7 @@ const SFX=(()=>{
     const g=ac.createGain(); env(g,t,0.01,peak,dur); o.connect(g); g.connect(master); o.start(t); o.stop(t+dur+0.05);
   }
   return {
-    init, setOn(v){ on=v; }, isOn(){ return on; },
+    init, setOn(v){ on=v; }, isOn(){ return on; }, raw(){ if (ac && ac.state==='suspended') ac.resume(); return ac; },
     ctx(){ return (ac && on && !(G && G.demo)) ? ac : null; }, out(){ return master; },
     whistle(long){
       if (!ok()) return; const t=ac.currentTime, dur=long?0.75:0.32;
@@ -3252,6 +3277,7 @@ function syncSound(){
   const b=$('sndBtn'); b.setAttribute('aria-pressed', String(!!S.sound)); b.setAttribute('aria-label', S.sound?'Sound on':'Sound off');
   $('sndOn').style.display=S.sound?'':'none'; $('sndOff').style.display=S.sound?'none':'';
   SFX.setOn(S.sound);
+  if (typeof syncMusicBtn==='function') syncMusicBtn();
   if (!S.sound && typeof voiceSrc!=='undefined' && voiceSrc){ try{ voiceSrc.stop(); }catch(e){} }
 }
 $('teamName').addEventListener('input',syncEdition);
@@ -3260,6 +3286,12 @@ $('sizeChips').addEventListener('change',()=>{ readMenu(); buildStar(); });
 $('swatches').addEventListener('change',()=>{ readMenu(); buildMenu(); });
 document.addEventListener('change',e=>{ if (e.target.closest && e.target.closest('#menu')) readMenu(); });
 $('sndBtn').onclick=$('soundBtn').onclick=$('soundBtn2').onclick=()=>{ S.sound=!S.sound; saveS(); syncSound(); SFX.init(); SFX.click(); };
+function syncMusicBtn(){ const b=$('musBtn'), on=S.music!==false; b.classList.toggle('off',!on); b.setAttribute('aria-pressed',String(on)); b.setAttribute('aria-label', on?'Music on':'Music off'); b.title=on?'Music on':'Music off'; b.hidden=!S.sound; }
+$('musBtn').onclick=()=>{ S.music = S.music===false; saveS(); syncMusicBtn(); SFX.init(); };
+// browsers only allow sound after a tap or key press: start the audio (and the menu music) on the first one
+const firstTouch=()=>{ SFX.init(); window.removeEventListener('pointerdown',firstTouch,true); window.removeEventListener('keydown',firstTouch,true); };
+window.addEventListener('pointerdown',firstTouch,true); window.addEventListener('keydown',firstTouch,true);
+document.addEventListener('visibilitychange',()=>{ const a=SFX.raw(); if (!a) return; if (document.hidden) a.suspend().catch(()=>{}); else a.resume().catch(()=>{}); });
 
 function fsSupported(){ const d=document.documentElement; return !!(d.requestFullscreen||d.webkitRequestFullscreen) && document.fullscreenEnabled!==false; }
 function isFs(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
@@ -3293,7 +3325,7 @@ async function say(key){
     }
     if (voiceSrc){ try{ voiceSrc.stop(); }catch(e){} }
     const src=ac.createBufferSource(), g=ac.createGain(); g.gain.value=2.2;   // a bit louder than effects
-    src.buffer=voiceBufs[id]; src.connect(g); g.connect(SFX.out()); src.start(ac.currentTime+0.05); voiceSrc=src;
+    src.buffer=voiceBufs[id]; src.connect(g); g.connect(SFX.out()); src.start(ac.currentTime+0.05); voiceSrc=src; MUSIC.duck(voiceBufs[id].duration+0.1);
   }catch(e){}
 }
 function startMatch(m){
@@ -3782,6 +3814,16 @@ function renderLobby(){
   $('onMine').innerHTML = mine.length ? mine.map(r=>`<li>${fmtResult(r, me)}<small>${fmtWhen(r.ts)}</small></li>`).join('') : `<li class="none">No games yet. Challenge someone!</li>`;
   $('onAll').innerHTML = all.length ? all.map(r=>`<li>${fmtResult(r)}<small>${fmtWhen(r.ts)}</small></li>`).join('') : `<li class="none">No games yet.</li>`;
   $('onHist').hidden=!live;
+  // every player's record (not just who's online)
+  const recs=new Map(); for (const r of (L.board||[])) recs.set(r.name.toLowerCase(), { ...r });
+  for (const p of (L.players||[])) if (!recs.has(p.name.toLowerCase())) recs.set(p.name.toLowerCase(), { name:p.name, w:p.w, l:p.l });
+  const on=new Set((L.players||[]).map(p=>p.name.toLowerCase()));
+  const rows=[...recs.values()].sort((a,b)=>b.w-a.w || a.l-b.l || a.name.localeCompare(b.name));
+  $('onBoard').innerHTML = rows.length ? rows.map((r,i)=>{ const g=r.w+r.l, pc=g?Math.round(r.w/g*100)+'%':'–';
+    return `<tr class="${r.name.toLowerCase()===me.toLowerCase()?'me':''}"><td>${i===0&&r.w?'🥇':i+1}</td><td>${esc(r.name)}${on.has(r.name.toLowerCase())?'<span class="od" aria-label="online"></span>':''}</td><td>${r.w}</td><td>${r.l}</td><td>${pc}</td></tr>`; }).join('')
+    : `<tr class="none"><td colspan="5">No games yet</td></tr>`;
+  $('onBoardWrap').hidden=!live;
+  $('online').querySelector('.card').classList.toggle('wide', live);
 }
 
 /* ---- challenge pop-up (works over the lobby and the results screen) ---- */
@@ -3832,7 +3874,7 @@ function netMessage(m){
     if (m.why==='elsewhere'){ onStatus('Signed out here', msg, false); $('onRetry').hidden=false; return; }
     onView('onSetup'); buildSetup(msg); onStatusHide(); if (!$('online').hidden) return; $('end').hidden=true; $('online').hidden=false;
   }
-  else if (m.t==='lobby'){ NET.lobby={ players:m.players||[], recent:m.recent||[] }; const meP=NET.lobby.players.find(p=>p.name===S.netName); if (meP) NET.me={ w:meP.w, l:meP.l }; renderLobby(); }
+  else if (m.t==='lobby'){ NET.lobby={ players:m.players||[], recent:m.recent||[], board:m.board||[] }; const meP=NET.lobby.players.find(p=>p.name===S.netName); if (meP) NET.me={ w:meP.w, l:meP.l }; renderLobby(); }
   else if (m.t==='challenged'){ NET.incoming=m.from; showChal('in', m.from); }
   else if (m.t==='cancelled'){ if (NET.chalKind==='in'){ hideChal(); toast2(`${m.from} cancelled the challenge.`); } NET.incoming=null; }
   else if (m.t==='pending'){ }
@@ -3948,6 +3990,92 @@ function voiceStop(keepBtn){
 $('micBtn').onclick=e=>{ e.preventDefault(); micToggle(); };
 
 
+/* ================= MUSIC: two original tunes, played live with Web Audio ================= */
+const MUSIC=(()=>{
+  const B=(n)=>n;   // note numbers are MIDI (60 = middle C)
+  const TR={
+    menu:{ bpm:96, vol:0.2, bars:8,
+      chords:[[48,[60,64,67,71]],[45,[57,60,64,67]],[41,[53,57,60,64]],[43,[55,59,62,65]],[48,[60,64,67,71]],[45,[57,60,64,67]],[41,[53,57,60,64]],[43,[55,59,62,65]]],
+      mel:[ [[0,76,4],[4,74,2],[6,72,2],[8,67,6]], [[0,69,3],[3,72,3],[6,76,2],[8,74,8]], [[0,72,2],[2,69,2],[4,72,4],[8,74,2],[10,72,2],[12,69,4]], [[0,67,6],[8,74,4],[12,74,2],[14,76,2]],
+            [[0,79,4],[4,76,2],[6,74,2],[8,72,6]], [[0,76,3],[3,74,3],[6,72,2],[8,69,8]], [[0,72,2],[2,74,2],[4,76,4],[8,77,4],[12,76,4]], [[0,74,8],[8,71,4],[12,67,4]] ] },
+    game:{ bpm:128, vol:0.16, bars:16,
+      chords:[[40,[64,67,71]],[36,[60,64,67]],[43,[62,67,71]],[38,[62,66,69]],[40,[64,67,71]],[36,[60,64,67]],[43,[62,67,71]],[38,[62,66,69]],
+              [36,[60,64,67]],[38,[62,66,69]],[40,[64,67,71]],[40,[64,67,71]],[36,[60,64,67]],[38,[62,66,69]],[43,[62,67,71]],[38,[62,66,69]]],
+      mel:[ [[0,76,2],[2,79,2],[4,76,2],[6,74,2],[8,71,4],[12,74,4]], [[0,72,2],[2,71,2],[4,67,4],[8,64,2],[10,67,2],[12,72,4]], [[0,71,2],[2,74,2],[4,79,4],[8,74,4],[12,71,4]], [[0,69,6],[6,66,2],[8,69,2],[10,74,2],[12,78,4]],
+            [[0,76,2],[2,79,2],[4,76,2],[6,74,2],[8,71,4],[12,74,4]], [[0,72,2],[2,71,2],[4,67,4],[8,64,2],[10,67,2],[12,72,4]], [[0,71,2],[2,74,2],[4,79,4],[8,74,4],[12,71,4]], [[0,78,2],[2,76,2],[4,74,2],[6,69,2],[8,74,8]],
+            [[0,79,6],[6,76,2],[8,79,4],[12,81,4]], [[0,78,6],[6,74,2],[8,78,4],[12,81,4]], [[0,83,4],[4,81,2],[6,79,2],[8,76,4],[12,79,4]], [[0,76,12],[12,71,2],[14,74,2]],
+            [[0,72,2],[2,76,2],[4,79,2],[6,84,2],[8,83,4],[12,79,4]], [[0,78,2],[2,81,2],[4,86,4],[8,81,4],[12,78,4]], [[0,79,4],[4,74,4],[8,71,4],[12,74,4]], [[0,78,4],[4,81,4],[8,83,4],[12,86,4]] ] },
+  };
+  let ac=null, out=null, bus=null, noise=null, cur=null, want=null, step=0, nextT=0, timer=null, fading=false, paused=false;
+  const hz=n=>440*Math.pow(2,(n-69)/12);
+  function setup(a){
+    if (ac || !a) return; ac=a;
+    out=ac.createGain(); out.gain.value=0.0001; out.connect(ac.destination);
+    bus=ac.createDynamicsCompressor(); bus.threshold.value=-18; bus.ratio.value=3; bus.connect(out);
+    const len=ac.sampleRate; noise=ac.createBuffer(1,len,ac.sampleRate); const d=noise.getChannelData(0); for (let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  }
+  function env(g,t,a,peak,dur){ g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(peak,t+a); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); }
+  function osc(type,f,t,dur,peak,dest,a){ const o=ac.createOscillator(), g=ac.createGain(); o.type=type; o.frequency.value=f; env(g,t,a||0.008,peak,dur); o.connect(g); g.connect(dest||bus); o.start(t); o.stop(t+dur+0.05); return o; }
+  function nz(t,dur,peak,type,freq,q){ const s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain(); s.buffer=noise; f.type=type; f.frequency.value=freq; f.Q.value=q||0.7; env(g,t,0.003,peak,dur); s.connect(f); f.connect(g); g.connect(bus); s.start(t, Math.random()*0.5); s.stop(t+dur+0.05); }
+  const I={
+    marimba(n,t,d){ osc('sine',hz(n),t,0.45,0.09); osc('sine',hz(n)*4,t,0.08,0.015); },
+    steel(n,t,d){ const L=Math.max(0.35,d*1.15); osc('sine',hz(n),t,L,0.13); osc('sine',hz(n)*2,t,L*0.6,0.05); osc('sine',hz(n)*3.01,t,L*0.3,0.02); },
+    softBass(n,t,d){ osc('triangle',hz(n),t,Math.min(0.5,d),0.22,null,0.02); },
+    lead(n,t,d){ const L=Math.max(0.12,d*0.95); const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=2600; f.connect(bus);
+      osc('square',hz(n)*1.003,t,L,0.035,f,0.01); osc('square',hz(n)*0.997,t,L,0.035,f,0.01); osc('triangle',hz(n)*2,t,L*0.5,0.015); },
+    bass(n,t,d){ const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.setValueAtTime(1200,t); f.frequency.exponentialRampToValueAtTime(300,t+0.18); f.Q.value=4; f.connect(bus);
+      osc('sawtooth',hz(n),t,0.2,0.16,f,0.005); osc('sine',hz(n),t,0.22,0.12); },
+    stab(ns,t){ for (const n of ns) osc('triangle',hz(n),t,0.13,0.03); },
+    kick(t,v){ const o=ac.createOscillator(), g=ac.createGain(); o.frequency.setValueAtTime(140,t); o.frequency.exponentialRampToValueAtTime(42,t+0.13); env(g,t,0.003,0.45*v,0.26); o.connect(g); g.connect(bus); o.start(t); o.stop(t+0.3); },
+    clap(t){ nz(t,0.14,0.14,'bandpass',1500,0.9); nz(t+0.012,0.1,0.08,'bandpass',1100,0.9); },
+    hat(t,v){ nz(t,0.04,0.05*v,'highpass',7500,0.7); },
+    shaker(t,v){ nz(t,0.07,0.035*v,'highpass',5000,0.6); },
+  };
+  function playStep(name, s, t){
+    const T=TR[name], bar=Math.floor(s/16)%T.bars, k=s%16, sd=60/T.bpm/4, [root,ch]=T.chords[bar];
+    for (const [st,n,len] of T.mel[bar]) if (st===k) (name==='menu'?I.steel:I.lead)(n,t,len*sd);
+    if (name==='menu'){
+      if (k%2===0){ const pat=[0,1,2,3,2,1,2,3]; I.marimba(ch[pat[k/2]%ch.length]+(k>=8&&bar%2?0:0),t,sd); }
+      if (k===0) I.softBass(root,t,sd*6); if (k===8) I.softBass(root+12,t,sd*4); if (k===12) I.softBass(root+7,t,sd*4);
+      if (k===0||k===8) I.kick(t,0.45);
+      if (k%4===2) I.shaker(t,1); else if (k%2===1) I.shaker(t,0.4);
+    } else {
+      const B2=bar>=8;
+      if (k%2===0){ const off=[0,0,12,0,7,0,12,7][k/2]; I.bass(root+off,t,sd*2); }
+      if (k%4===0) I.kick(t,1);
+      if (k===4||k===12) I.clap(t);
+      if (k%4===2) I.hat(t,1); else if (B2 && k%2===1) I.hat(t,0.45);
+      if (k===6||k===14) I.stab(ch,t);
+      if (bar===15 && k>=12) I.clap(t);   // little fill into the loop
+    }
+  }
+  function tick(){
+    if (!ac || !cur) return;
+    const T=TR[cur], sd=60/T.bpm/4;
+    if (nextT<ac.currentTime) nextT=ac.currentTime+0.05;
+    while (nextT < ac.currentTime+0.15){ playStep(cur, step, nextT); nextT+=sd; step=(step+1)%(T.bars*16); }
+  }
+  function level(){ return cur ? TR[cur].vol*(paused?0.45:1) : 0.0001; }
+  function ramp(v,secs){ const t=ac.currentTime; out.gain.cancelScheduledValues(t); out.gain.setValueAtTime(Math.max(0.0001,out.gain.value),t); out.gain.linearRampToValueAtTime(Math.max(0.0001,v),t+secs); }
+  function play(name){       // name: 'menu' | 'game' | null (silence)
+    if (!ac || name===want) return; want=name;
+    if (!cur){ cur=name; step=0; nextT=ac.currentTime+0.1; if (cur){ ramp(level(),1.2); if (!timer) timer=setInterval(tick,25); } return; }
+    fading=true; ramp(0.0001,0.6);
+    setTimeout(()=>{ fading=false; cur=want; step=0; nextT=ac.currentTime+0.05; if (cur) ramp(level(),1.0); else { clearInterval(timer); timer=null; } }, 650);
+  }
+  function setPaused(p){ if (p===paused) return; paused=p; if (ac && cur && !fading) ramp(level(),0.3); }
+  function duck(secs){ if (!ac || !cur || fading) return; const t=ac.currentTime, v=level(); out.gain.cancelScheduledValues(t); out.gain.setValueAtTime(Math.max(0.0001,out.gain.value),t); out.gain.linearRampToValueAtTime(v*0.35,t+0.08); out.gain.setValueAtTime(v*0.35,t+secs); out.gain.linearRampToValueAtTime(v,t+secs+0.5); }
+  return { setup, play, setPaused, duck, now:()=>cur };
+})();
+function musicSync(){
+  const a=SFX.raw();
+  if (!a) return;
+  MUSIC.setup(a);
+  const on=S.sound && S.music!==false && !document.hidden;
+  MUSIC.play(!on ? null : (running || RP || (G && G.netClient && NET.phase==='playing')) ? 'game' : 'menu');
+  MUSIC.setPaused(!!paused);
+}
+
 /* ================= LOOP ================= */
 let last=performance.now(), acc=0;
 const DT=1/60;
@@ -3955,6 +4083,7 @@ function frame(now){
   let el=Math.min(0.1,(now-last)/1000); last=now;
   if (G && running) checkOverlays();
   if (G && G.slow>0 && !paused && !overlay){ G.slow-=el; el*=0.3; }
+  musicSync();
   if (G && !G.demo && G.chNew && G.chNew.length){ G.chNew.length=0; SFX.star(); }
   if (G && G.say && G.say.length){ const line=G.say[G.say.length-1]; G.say.length=0; if (!G.demo) say(line); }
   if (G && !G.demo && running && !S.scored && G.teams[0].score>0){ S.scored=true; saveS(); }

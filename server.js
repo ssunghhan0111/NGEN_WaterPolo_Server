@@ -51,7 +51,8 @@ const byName = name => [...players].find(p => p.name.toLowerCase() === String(na
 function lobbyMsg(){
   return JSON.stringify({ t: 'lobby',
     players: [...players].map(p => { const r = store.recOf(p.name); return { name: p.name, w: r.w, l: r.l, busy: !!p.match }; }),
-    recent: store.history().slice(0, 40) });
+    recent: store.history().slice(0, 40),
+    board: store.all().map(r => ({ name: r.name, w: r.w, l: r.l })) });
 }
 let lobbyTimer = null;
 function broadcastLobby(){            // batch quick changes into one update

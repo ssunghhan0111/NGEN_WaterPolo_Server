@@ -57,4 +57,4 @@ async function addResult(wName, lName, ws, ls, so){
   return m;
 }
 
-module.exports = { load, recOf, addResult, history: () => history, REMOTE };
+module.exports = { load, recOf, addResult, history: () => history, all: () => [...recs.values()], REMOTE };
