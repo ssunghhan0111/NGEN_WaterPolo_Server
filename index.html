@@ -154,9 +154,18 @@ table.stats td:nth-child(2){color:#4a6378;font-size:12px;letter-spacing:.1em;tex
 .xpChips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
 .xpChips span{font:800 12px var(--body);border:2px solid var(--ink);border-radius:999px;padding:2px 8px;background:#e9fbf3}
 .btn.locker{background:#cfeef7}
-#locker .card{gap:12px}
+#locker .card{gap:12px;max-width:640px}
+.lkPrev{width:100%;height:170px;border:3px solid var(--ink);border-radius:18px;background:linear-gradient(180deg,#38c6ec,#1596c9)}
+.lkTabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.lkTabs button{position:relative;font:900 14px var(--body);color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:999px;padding:7px 13px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.lkTabs button[aria-selected=true]{background:var(--sun)}
+.lkTabs button .nb,.locker .nb2{position:absolute;top:-8px;right:-6px;min-width:18px;height:18px;border-radius:9px;background:#e5383b;color:#fff;font:900 11px/18px var(--body);padding:0 4px;border:2px solid var(--ink)}
+.lkItem .new{position:absolute;top:-7px;left:-6px;background:#e5383b;color:#fff;font:900 10px var(--body);letter-spacing:.06em;padding:2px 6px;border-radius:999px;border:2px solid var(--ink);transform:rotate(-8deg)}
+#lockerBtn{position:relative;display:flex;align-items:center;justify-content:center;gap:10px}
+#lockerBtn canvas{width:34px;height:34px;flex:none}
+#lockerBtn .nb2{top:-9px;right:-6px}
 .lkSlot h4{margin:0 0 6px;font:400 18px var(--display);letter-spacing:.03em}
-.lkGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.lkGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px}
 .lkItem{position:relative;display:grid;justify-items:center;gap:3px;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:6px 4px 7px;cursor:pointer;font:800 11px var(--body);color:var(--ink);text-align:center;line-height:1.15}
 .lkItem canvas{width:54px;height:54px}
 .lkItem.on{background:#fff6d1;box-shadow:0 0 0 3px var(--sun) inset}
@@ -214,6 +223,7 @@ table.stats td:nth-child(2){color:#4a6378;font-size:12px;letter-spacing:.1em;tex
 .onBoardTbl td .od{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2fbf8f;margin-left:6px;vertical-align:middle}
 .onBoardTbl tr:nth-child(1) td:first-child{color:#d49b00}
 .onBoardTbl .none td{text-align:center;color:#6a8597}
+.lgc{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:2.5px solid;font:14px/1 "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;margin-right:6px;vertical-align:middle}
 #onLobby[hidden]{display:none!important}
 .onList{display:grid;gap:8px;margin-top:6px}
 .onP{display:flex;align-items:center;gap:10px;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:8px 8px 8px 12px}
@@ -488,11 +498,13 @@ table.lg tr:last-child td,table.box tr:last-child td{border-bottom:0}
 </div>
 
 <div class="screen" id="locker" hidden>
-  <div class="card">
+  <div class="card locker">
     <div class="result" style="font-size:clamp(34px,8vw,48px)">MY LOCKER</div>
+    <canvas id="lkPrev" class="lkPrev" aria-label="Your team look"></canvas>
     <div class="starbar" id="lkBar"></div>
-    <p class="hint" style="text-align:center;margin:0">Level up to unlock more. Tap an item to wear it!</p>
-    <div id="lkSlots" style="display:grid;gap:12px"></div>
+    <div class="lkTabs" id="lkTabs" role="tablist"></div>
+    <div class="lkGrid" id="lkGrid" role="tabpanel"></div>
+    <p class="hint" id="lkCount" style="text-align:center;margin:0"></p>
     <div class="btns"><button class="btn go" id="lkDone">DONE</button></div>
   </div>
 </div>
@@ -982,7 +994,7 @@ function matchSummary(){
 /* ================= GAME SETUP ================= */
 function mkTeam(id, cfg, nf){
   const t = { id, name:cfg.name, short:cfg.short, cap:cfg.cap, numCol:cfg.numCol, human:!!cfg.human, roster:cfg.roster||null,
-    trim:cfg.trim||null, capPat:cfg.capPat||null, suit:cfg.suit||null, gear:cfg.gear||null, gkBoost:0, pw:blankPw(), rating:cfg.rating||1, leagueId:cfg.leagueId||null, showNames:cfg.showNames!==false, pstats:{},
+    trim:cfg.trim||null, capD:cfg.capD||null, suitD:cfg.suitD||null, gear:cfg.gear||null, logo:cfg.logo||null, gkBoost:0, pw:blankPw(), rating:cfg.rating||1, leagueId:cfg.leagueId||null, showNames:cfg.showNames!==false, pstats:{},
     dir: id===0 ? 1 : -1, score:0, bench:Array.from({length:11-nf},(_,i)=>nf+2+i),
     stats:{ shots:0, goals:0, saves:0, steals:0, exclDrawn:0, pens:0 }, players:[] };
   for (let i=0;i<=nf;i++) t.players.push({ team:id, idx:i, num:i+1, gk:i===0, x:0,y:0,vx:0,vy:0, fx:t.dir, fy:0,
@@ -2332,53 +2344,235 @@ function saveS(){ try{ localStorage.setItem(STORE, JSON.stringify(S)); }catch(e)
 function shortOf(name){ const w=(name||'HOME').trim().split(/\s+/)[0].toUpperCase(); return w.slice(0,8) || 'HOME'; }
 
 /* ---- player level & locker items ---- */
-const PL = { max:20, xp:{ play:20, win:20, goal:8, goalCap:40, star:15, steal:2, stealCap:10, online:20, onlineWin:20 } };
-const plNeed = L => Math.round(40 + 30*Math.pow(L-1, 1.25));   // low levels come fast, high levels take longer
+const PL = { max:30, xp:{ play:20, win:20, goal:8, goalCap:40, star:15, steal:2, stealCap:10, online:20, onlineWin:20 } };
+const plNeed = L => Math.round(40 + 18*Math.pow(L-1, 1.15));   // low levels come fast, high levels take longer
 function plFromXp(xp){ xp=Math.max(0,xp|0); let L=1; while (L<PL.max && xp>=plNeed(L)){ xp-=plNeed(L); L++; } return { lv:L, into:xp, need: L<PL.max ? plNeed(L) : 0 }; }
-const PL_TITLES=[[1,'Tadpole','#7fd6ff'],[3,'Minnow','#2fbf8f'],[6,'Dolphin','#ffd23f'],[10,'Shark','#ff9f45'],[15,'Orca','#ff7ad9'],[20,'Legend','#ffc400']];
+const PL_TITLES=[[1,'Tadpole','#7fd6ff'],[4,'Minnow','#2fbf8f'],[8,'Dolphin','#ffd23f'],[13,'Shark','#ff9f45'],[19,'Orca','#ff7ad9'],[25,'Kraken','#b07cff'],[30,'Legend','#ffc400']];
 function plTitle(L){ let r=PL_TITLES[0]; for (const t of PL_TITLES) if (L>=t[0]) r=t; return r; }
-const rivalMul = L => 1 + 0.01*(L-1);             // rival teams get a little tougher every level (up to +19%)
+const rivalMul = L => 1 + 0.007*(L-1);            // rival teams get a little tougher every level (about +20% at Level 30)
+
+/* ---- the locker: caps, suits, balls, team logos, goal parties, extras ---- */
+// cap / suit: base color, number color, pattern, 2nd and 3rd color
+const C=(lv,id,name,base,pat,c2,c3,num)=>({ lv, kind:'cap', id, name, base, pat, c2, c3, num:num||'#ffffff' });
+const SU=(lv,id,name,base,pat,c2,c3)=>({ lv, kind:'suit', id, name, base, pat, c2, c3 });
+const BA=(lv,id,name)=>({ lv, kind:'ball', id, name });
+const LO=(lv,id,name,emoji,shape,c1,c2)=>({ lv, kind:'logo', id, name, emoji, shape, c1, c2 });
 const ITEMS = [
-  { lv:1,  kind:'cap',   id:'navy',      name:'Navy cap',         col:'#1f3c8f' },
-  { lv:1,  kind:'suit',  id:'blue',      name:'Blue suit',        col:'#2459db' },
-  { lv:1,  kind:'ball',  id:'classic',   name:'Classic ball' },
-  { lv:1,  kind:'celeb', id:'confetti',  name:'Confetti' },
-  { lv:1,  kind:'extra', id:'none',      name:'Nothing extra' },
-  { lv:2,  kind:'ball',  id:'beach',     name:'Beach ball' },
-  { lv:3,  kind:'suit',  id:'red',       name:'Red suit',         col:'#e5383b' },
-  { lv:4,  kind:'cap',   id:'black',     name:'Black cap',        col:'#1c1c25' },
-  { lv:5,  kind:'celeb', id:'ducks',     name:'Rubber duck party' },
-  { lv:6,  kind:'extra', id:'goggles',   name:'Cool goggles' },
-  { lv:7,  kind:'suit',  id:'green',     name:'Green suit',       col:'#16a37b' },
-  { lv:8,  kind:'ball',  id:'rainbow',   name:'Rainbow ball' },
-  { lv:9,  kind:'cap',   id:'royal',     name:'Royal blue cap',   col:'#2459db' },
-  { lv:10, kind:'celeb', id:'fireworks', name:'Goal fireworks' },
-  { lv:11, kind:'suit',  id:'orange',    name:'Orange suit',      col:'#ff8a2b' },
-  { lv:12, kind:'cap',   id:'stripes',   name:'Racing stripe cap', col:'#1f3c8f', pat:'stripes' },
-  { lv:13, kind:'ball',  id:'gold',      name:'Golden ball' },
-  { lv:14, kind:'suit',  id:'purple',    name:'Purple suit',      col:'#8c4bff' },
-  { lv:15, kind:'cap',   id:'stars',     name:'Star cap',         col:'#2459db', pat:'stars' },
-  { lv:16, kind:'suit',  id:'rainbow',   name:'Rainbow suit',     col:'rainbow' },
-  { lv:17, kind:'extra', id:'goldears',  name:'Golden ear guards' },
-  { lv:18, kind:'cap',   id:'green',     name:'Green cap',        col:'#0f6b4b' },
-  { lv:19, kind:'suit',  id:'gold',      name:'Golden suit',      col:'#ffc400' },
-  { lv:20, kind:'extra', id:'crown',     name:'Champion crown' },
+  // caps
+  C(1,'navy','Navy classic','#1f3c8f','solid'),
+  C(1,'sky','Sky stripe','#3fa7ff','stripe','#ffffff'),
+  C(1,'lime','Lime racer','#34c759','racing','#0b1e33'),
+  C(2,'polka','Polka pop','#ff5c8a','dots','#ffffff'),
+  C(3,'fire','Fire cap','#1c1c25','flames','#ff5a1f','#ffd23f'),
+  C(4,'bolt','Lightning','#2a2d7c','bolt','#ffd23f'),
+  C(5,'shark','Shark bite','#5b6b7a','teeth','#ffffff'),
+  C(6,'checker','Race flag','#ffffff','checker','#0b1e33',null,'#e5383b'),
+  C(7,'tiger','Tiger','#ff9f1c','tiger','#1c1c25'),
+  C(8,'candy','Candy cane','#ffffff','candy','#e5383b',null,'#0b1e33'),
+  C(9,'camo','Camo','#4b5d34','camo','#7c8f4e','#2f3a20'),
+  C(10,'galaxy','Galaxy','#1a1240','galaxy','#b06bff'),
+  C(11,'melon','Watermelon','#2fa84f','tiger','#146b2e'),
+  C(12,'zebra','Zebra','#ffffff','zebra','#141414',null,'#e5383b'),
+  C(13,'rainbow','Rainbow','#ff4d5e','rainbow'),
+  C(14,'hearts','Sweetheart','#ffb3c8','hearts','#e5383b',null,'#0b1e33'),
+  C(15,'ice','Ice crystal','#a8e6ff','ice','#ffffff',null,'#0b1e33'),
+  C(16,'leopard','Leopard','#f2c14e','leopard','#3b2a14','#c98a1a','#0b1e33'),
+  C(17,'mermaid','Mermaid scales','#18b6a8','scales','#8ff0e4'),
+  C(18,'lava','Lava','#3a0d0d','lava','#ff6a1f','#ffd23f'),
+  C(19,'pixel','Pixel','#222233','pixel','#2fbf8f','#3fa7ff'),
+  C(20,'stars','Star cap','#2459db','stars','#ffd23f'),
+  C(21,'swirl','Hypno swirl','#8c4bff','swirl','#ffd23f'),
+  C(22,'waves','Big waves','#0e7490','waves','#7fd6ff'),
+  C(23,'split','Two-tone','#e5383b','split','#1f3c8f'),
+  C(24,'neon','Neon bolt','#0b1e33','bolt','#39ff88'),
+  C(25,'dragon','Dragon fire','#6b0f1a','flames','#ffd23f','#ff5a1f'),
+  C(26,'chrome','Chrome','#c9d3da','chrome','#ffffff',null,'#0b1e33'),
+  C(27,'cosmic','Cosmic gold','#050a30','galaxy','#ffd23f'),
+  C(28,'gold','Solid gold','#ffc400','gold','#a86b00',null,'#0b1e33'),
+  C(30,'diamond','Diamond','#e8fbff','ice','#7fd6ff',null,'#0b1e33'),
+  // suits
+  SU(1,'blue','Blue','#2459db','solid'),
+  SU(1,'red','Red','#e5383b','solid'),
+  SU(1,'green','Green stripe','#16a37b','stripe','#ffffff'),
+  SU(2,'orange','Orange crush','#ff8a2b','racing','#ffffff'),
+  SU(3,'polka','Purple polka','#8c4bff','dots','#ffffff'),
+  SU(5,'flames','Flames','#1c1c25','flames','#ff5a1f','#ffd23f'),
+  SU(6,'tiger','Tiger','#ff9f1c','tiger','#1c1c25'),
+  SU(8,'rainbow','Rainbow','#ff4d5e','rainbow'),
+  SU(9,'camo','Camo','#4b5d34','camo','#7c8f4e','#2f3a20'),
+  SU(11,'galaxy','Galaxy','#1a1240','galaxy','#b06bff'),
+  SU(13,'checker','Race flag','#ffffff','checker','#0b1e33'),
+  SU(14,'hearts','Hearts','#ffb3c8','hearts','#e5383b'),
+  SU(16,'bolt','Lightning','#2a2d7c','bolt','#ffd23f'),
+  SU(17,'lava','Lava','#3a0d0d','lava','#ff6a1f','#ffd23f'),
+  SU(19,'scales','Mermaid','#18b6a8','scales','#8ff0e4'),
+  SU(21,'zebra','Zebra','#ffffff','zebra','#141414'),
+  SU(23,'pixel','Pixel','#222233','pixel','#2fbf8f','#3fa7ff'),
+  SU(25,'leopard','Leopard','#f2c14e','leopard','#3b2a14','#c98a1a'),
+  SU(27,'gold','Golden','#ffc400','gold','#a86b00'),
+  SU(29,'chrome','Chrome','#c9d3da','chrome','#ffffff'),
+  // balls
+  BA(1,'classic','Classic'), BA(1,'beach','Beach ball'), BA(2,'melon','Watermelon'), BA(4,'basket','Basketball'),
+  BA(6,'smile','Smiley'), BA(7,'rainbow','Rainbow'), BA(9,'planet','Planet'), BA(11,'tennis','Tennis ball'),
+  BA(13,'galaxy','Galaxy'), BA(15,'eye','Eyeball'), BA(17,'lava','Lava ball'), BA(19,'disco','Disco ball'),
+  BA(21,'ice','Snowball'), BA(23,'candy','Candy'), BA(25,'pizza','Pizza'), BA(26,'gold','Golden ball'), BA(28,'fire','Fireball'), BA(30,'diamond','Diamond ball'),
+  // team logos
+  LO(1,'wave','Ngen Wave','🌊','shield','#1f3c8f','#7fd6ff'),
+  LO(1,'shark','Shark','🦈','circle','#0e7490','#ffd23f'),
+  LO(1,'bolt','Lightning','⚡','star','#2a2d7c','#ffd23f'),
+  LO(2,'dolphin','Dolphin','🐬','circle','#3fa7ff','#ffffff'),
+  LO(3,'octo','Octopus','🐙','hex','#8c4bff','#ffb3c8'),
+  LO(4,'trident','Trident','🔱','shield','#0b1e33','#ffd23f'),
+  LO(5,'fire','Fire','🔥','diamond','#e5383b','#ffd23f'),
+  LO(6,'whale','Whale','🐳','circle','#1f6fd6','#a8e6ff'),
+  LO(7,'crown','Royals','👑','shield','#6b2fb3','#ffd23f'),
+  LO(8,'anchor','Anchor','⚓','hex','#1f3c8f','#ff6a4d'),
+  LO(9,'turtle','Turtle','🐢','circle','#16a37b','#ffd23f'),
+  LO(10,'seal','Seal','🦭','shield','#5b6b7a','#ffffff'),
+  LO(11,'crab','Crab','🦀','burst','#ff6a4d','#ffd23f'),
+  LO(12,'croc','Croc','🐊','hex','#2f6b2f','#c6f26b'),
+  LO(13,'star','Superstar','🌟','star','#0b1e33','#ffd23f'),
+  LO(14,'rocket','Rocket','🚀','circle','#1a1240','#ff7ad9'),
+  LO(15,'lion','Lion','🦁','shield','#ff9f1c','#7c1f36'),
+  LO(16,'dragon','Dragon','🐉','diamond','#0f6b4b','#ffd23f'),
+  LO(17,'eagle','Eagle','🦅','shield','#7c1f36','#ffd23f'),
+  LO(18,'wolf','Wolf','🐺','hex','#3b4a5a','#a8e6ff'),
+  LO(19,'volcano','Volcano','🌋','burst','#3a0d0d','#ff6a1f'),
+  LO(20,'puffer','Pufferfish','🐡','circle','#ffd23f','#ff6a4d'),
+  LO(21,'squid','Squid','🦑','diamond','#e5383b','#ffb3c8'),
+  LO(22,'dino','Dino','🦖','shield','#34c759','#0b1e33'),
+  LO(23,'ufo','UFO','🛸','circle','#050a30','#39ff88'),
+  LO(24,'comet','Comet','☄️','star','#1f3c8f','#ff9f1c'),
+  LO(25,'unicorn','Unicorn','🦄','burst','#ff7ad9','#ffffff'),
+  LO(26,'gem','Diamond','💎','diamond','#0e7490','#e8fbff'),
+  LO(27,'trophy','Champions','🏆','shield','#0b1e33','#ffc400'),
+  LO(28,'rainbow','Rainbow','🌈','circle','#3fa7ff','#ffffff'),
+  LO(30,'goat','G.O.A.T.','🐐','star','#ffc400','#0b1e33'),
+  // goal parties
+  { lv:1, kind:'celeb', id:'confetti', name:'Confetti' },
+  { lv:5, kind:'celeb', id:'ducks', name:'Rubber duck party' },
+  { lv:10, kind:'celeb', id:'fireworks', name:'Fireworks' },
+  // extras
+  { lv:1, kind:'extra', id:'none', name:'Nothing extra' },
+  { lv:4, kind:'extra', id:'goggles', name:'Cool goggles' },
+  { lv:8, kind:'extra', id:'shades', name:'Sunglasses' },
+  { lv:12, kind:'extra', id:'mohawk', name:'Mohawk' },
+  { lv:16, kind:'extra', id:'goldears', name:'Golden ear guards' },
+  { lv:20, kind:'extra', id:'horns', name:'Viking horns' },
+  { lv:24, kind:'extra', id:'halo', name:'Halo' },
+  { lv:29, kind:'extra', id:'crown', name:'Champion crown' },
 ];
-const SLOTS=[['cap','Caps'],['suit','Swim suits'],['ball','Balls'],['celeb','Goal party'],['extra','Extras']];
+const SLOTS=[['cap','Caps'],['suit','Suits'],['ball','Balls'],['logo','Team logo'],['celeb','Goal party'],['extra','Extras']];
 const plLevel = () => plFromXp(S.pxp).lv;
 const itemOf = (kind,id) => ITEMS.find(i=>i.kind===kind && i.id===id);
+const itemKey = it => it.kind+':'+it.id;
 function gear(){   // what you're wearing; anything not unlocked (yet) falls back to the default
   const L=plLevel(), g=S.gear||{}, out={};
   for (const [k] of SLOTS){ const it=itemOf(k,g[k]); out[k] = it && it.lv<=L ? it.id : ITEMS.find(i=>i.kind===k).id; }
   return out;
 }
+function newItems(){ const L=plLevel(), seen=S.seen||{}; return ITEMS.filter(i=>i.lv>1 && i.lv<=L && !seen[itemKey(i)]); }
 function levelBarHTML(xp, gained){
-  const P=plFromXp(xp), tt=plTitle(P.lv), nx=ITEMS.find(i=>i.lv>P.lv);
+  const P=plFromXp(xp), tt=plTitle(P.lv), nx=ITEMS.filter(i=>i.lv>P.lv), nl=nx.length ? nx[0].lv : 0, at=nx.filter(i=>i.lv===nl);
   const pct = P.need ? Math.round(P.into/P.need*100) : 100;
   return `<div class="lvlTop"><span class="lvlB" style="background:${tt[2]}">${P.lv}</span><div class="lvlTxt"><div class="t">LEVEL ${P.lv}<small>${tt[1]}</small>${gained?` <small style="color:#0f8a5f">+${gained} XP</small>`:''}</div>
-    <div class="s">${nx ? `Next: <b>${nx.name}</b> at Level ${nx.lv}` : 'You unlocked everything! 👑'}</div></div></div>
+    <div class="s">${nl ? `Next: <b>${at.map(i=>i.name).slice(0,2).join(' + ')}</b> at Level ${nl}` : 'You unlocked everything! 👑'}</div></div></div>
     <div class="bar"><i style="width:${pct}%"></i></div>`;
 }
+
+/* ---- painting the designs ---- */
+// tiny fixed "random" numbers so patterns look the same every frame
+const PRN=(()=>{ const a=[]; let s=7; for (let i=0;i<200;i++){ s=(s*16807)%2147483647; a.push((s%10000)/10000); } return a; })();
+// draws a pattern inside the current clip, around (0,0), size R, +x = front
+function paintPat(c, d, R){
+  const p=d.pat, c2=d.c2||'#ffffff', c3=d.c3||'#0b1e33';
+  c.save();
+  if (p==='stripe'){ c.fillStyle=c2; c.fillRect(-R*1.3,-R*0.2,R*2.6,R*0.4); }
+  else if (p==='racing'){ c.fillStyle=c2; for (const y of [-0.45,0.45]) c.fillRect(-R*1.3,(y-0.11)*R,R*2.6,R*0.22); }
+  else if (p==='dots'){ c.fillStyle=c2; for (let j=-3;j<=3;j++) for (let i=-3;i<=3;i++){ c.beginPath(); c.arc((i*0.48+(j&1)*0.24)*R, j*0.42*R, R*0.13, 0, 6.283); c.fill(); } }
+  else if (p==='flames'){
+    for (const [col,sc] of [[c2,1],[c3,0.55]]){ c.fillStyle=col;
+      for (let k=-2;k<=2;k++){ const y=k*0.4*R; c.beginPath(); c.moveTo(-R*1.2,y-0.22*R*sc);
+        c.quadraticCurveTo(-R*0.3,y-0.3*R*sc, R*(0.25*sc-0.05),y+0.02*R); c.quadraticCurveTo(-R*0.35,y+0.12*R*sc,-R*1.2,y+0.22*R*sc); c.fill(); } }
+  }
+  else if (p==='bolt'){ c.fillStyle=c2; c.strokeStyle='#0b1e33'; c.lineWidth=Math.max(1,R*0.05);
+    const P=[[-1.1,-0.1],[-0.1,-0.5],[-0.2,-0.12],[0.8,-0.35],[-0.05,0.45],[0.02,0.06],[-1.1,0.3]];
+    c.beginPath(); P.forEach(([x,y],i)=>i?c.lineTo(x*R,y*R):c.moveTo(x*R,y*R)); c.closePath(); c.fill(); c.stroke(); }
+  else if (p==='teeth'){ c.fillStyle=c2; c.strokeStyle='#0b1e33'; c.lineWidth=Math.max(1,R*0.04);
+    for (const s of [-1,1]) for (let x=-1.2;x<0.9;x+=0.32){ c.beginPath(); c.moveTo(x*R,s*0.95*R); c.lineTo((x+0.32)*R,s*0.95*R); c.lineTo((x+0.16)*R,s*0.5*R); c.closePath(); c.fill(); c.stroke(); } }
+  else if (p==='checker'){ c.fillStyle=c2; const q=0.42; for (let i=-4;i<4;i++) for (let j=-4;j<4;j++) if ((i+j)&1) c.fillRect(i*q*R,j*q*R,q*R+0.5,q*R+0.5); }
+  else if (p==='candy'){ c.rotate(0.7); c.fillStyle=c2; for (let x=-2;x<2;x+=0.5) c.fillRect(x*R,-R*1.5,R*0.24,R*3); }
+  else if (p==='camo'){ for (let i=0;i<14;i++){ c.fillStyle=i%2?c2:c3; c.beginPath(); c.ellipse((PRN[i*3]*2.2-1.1)*R,(PRN[i*3+1]*2.2-1.1)*R,R*(0.2+PRN[i*3+2]*0.25),R*(0.14+PRN[i*3+2]*0.15),PRN[i]*3,0,6.283); c.fill(); } }
+  else if (p==='galaxy'){ const g=c.createRadialGradient(-R*0.2,R*0.1,R*0.05,-R*0.2,R*0.1,R*1.1); g.addColorStop(0,c2); g.addColorStop(1,'rgba(0,0,0,0)');
+    c.globalAlpha=0.7; c.fillStyle=g; c.fillRect(-R*1.3,-R*1.3,R*2.6,R*2.6); c.globalAlpha=1; c.fillStyle='#ffffff';
+    for (let i=0;i<16;i++){ c.beginPath(); c.arc((PRN[50+i*2]*2.2-1.1)*R,(PRN[51+i*2]*2.2-1.1)*R,R*(0.025+PRN[90+i]*0.04),0,6.283); c.fill(); } }
+  else if (p==='rainbow'){ const cols=['#ff4d5e','#ff9f45','#ffd23f','#2fbf8f','#3fa7ff','#8c6bff']; cols.forEach((k,i)=>{ c.fillStyle=k; c.fillRect(-R*1.3,(-1.2+i*0.4)*R,R*2.6,R*0.41); }); }
+  else if (p==='tiger' || p==='zebra'){ c.strokeStyle=c2; c.lineCap='round'; c.lineWidth=R*(p==='zebra'?0.17:0.13);
+    for (let x=-1;x<=1;x+=p==='zebra'?0.36:0.42){ for (const s of [-1,1]){ c.beginPath(); c.moveTo(x*R,s*1.1*R); c.quadraticCurveTo((x+0.25)*R,s*0.55*R,(x+0.05)*R,s*(p==='zebra'?0.05:0.3)*R); c.stroke(); } } }
+  else if (p==='hearts'){ c.fillStyle=c2; for (let j=-2;j<=2;j++) for (let i=-2;i<=2;i++){ const x=(i*0.55+(j&1)*0.27)*R, y=j*0.5*R, h=R*0.12;
+    c.beginPath(); c.moveTo(x,y+h*1.2); c.bezierCurveTo(x-h*2,y-h*0.2,x-h*0.8,y-h*1.6,x,y-h*0.4); c.bezierCurveTo(x+h*0.8,y-h*1.6,x+h*2,y-h*0.2,x,y+h*1.2); c.fill(); } }
+  else if (p==='ice'){ c.strokeStyle=c2; c.lineWidth=Math.max(1,R*0.06); c.lineCap='round';
+    for (const [x,y,s] of [[-0.45,-0.4,0.35],[0.3,0.35,0.3],[-0.4,0.45,0.22],[0.35,-0.45,0.2]]){ for (let a=0;a<3;a++){ const an=a*1.047; c.beginPath(); c.moveTo((x-Math.cos(an)*s)*R,(y-Math.sin(an)*s)*R); c.lineTo((x+Math.cos(an)*s)*R,(y+Math.sin(an)*s)*R); c.stroke(); } }
+    const g=c.createLinearGradient(-R,-R,R,R); g.addColorStop(0,'rgba(255,255,255,0.5)'); g.addColorStop(0.5,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(-R*1.3,-R*1.3,R*2.6,R*2.6); }
+  else if (p==='leopard'){ for (let i=0;i<12;i++){ const x=(PRN[120+i*2]*2.1-1.05)*R, y=(PRN[121+i*2]*2.1-1.05)*R, s=R*(0.11+PRN[150+i]*0.06);
+    c.fillStyle=c3; c.beginPath(); c.arc(x,y,s,0,6.283); c.fill(); c.strokeStyle=c2; c.lineWidth=s*0.55; c.beginPath(); c.arc(x,y,s*1.15,0.3,4.6); c.stroke(); } }
+  else if (p==='scales'){ c.strokeStyle=c2; c.lineWidth=Math.max(1,R*0.06); for (let j=-3;j<=3;j++) for (let i=-3;i<=3;i++){ c.beginPath(); c.arc((i*0.42+(j&1)*0.21)*R, j*0.3*R, R*0.21, 0, 3.1416); c.stroke(); } }
+  else if (p==='lava'){ c.strokeStyle=c2; c.lineWidth=Math.max(1.2,R*0.09); c.lineJoin='round'; c.shadowColor=c3; c.shadowBlur=R*0.3;
+    for (let k=0;k<5;k++){ c.beginPath(); let x=(PRN[160+k]*2-1)*R, y=-R*1.1; c.moveTo(x,y); for (let s=0;s<5;s++){ x+=(PRN[170+k*5+s]-0.5)*R*0.7; y+=R*0.5; c.lineTo(x,y); } c.stroke(); } }
+  else if (p==='pixel'){ const q=0.32; for (let i=-4;i<4;i++) for (let j=-4;j<4;j++){ const v=PRN[((i+4)*8+(j+4))%200]; if (v<0.3){ c.fillStyle=c2; c.fillRect(i*q*R,j*q*R,q*R,q*R); } else if (v<0.5){ c.fillStyle=c3; c.fillRect(i*q*R,j*q*R,q*R,q*R); } } }
+  else if (p==='stars'){ for (let j=-2;j<=2;j++) for (let i=-2;i<=2;i++) if ((i+j)%2===0) starPath(c,(i*0.5)*R,(j*0.5)*R,R*0.17,c2); }
+  else if (p==='swirl'){ c.strokeStyle=c2; c.lineWidth=R*0.16; c.beginPath(); for (let a=0;a<18;a+=0.2){ const rr=a*0.07*R; c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr); } c.stroke(); }
+  else if (p==='waves'){ c.strokeStyle=c2; c.lineWidth=R*0.12; c.lineCap='round'; for (let y=-1;y<=1;y+=0.45){ c.beginPath(); for (let x=-1.2;x<=1.2;x+=0.1) c.lineTo(x*R,(y+Math.sin(x*6)*0.1)*R); c.stroke(); } }
+  else if (p==='split'){ c.fillStyle=c2; c.fillRect(-R*1.3,-R*1.3,R*1.3,R*2.6); }
+  else if (p==='chrome'){ const g=c.createLinearGradient(0,-R,0,R); g.addColorStop(0,'#ffffff'); g.addColorStop(0.35,'#9aa8b3'); g.addColorStop(0.5,'#eef3f6'); g.addColorStop(0.7,'#7d8b96'); g.addColorStop(1,'#dfe7ec'); c.fillStyle=g; c.fillRect(-R*1.3,-R*1.3,R*2.6,R*2.6); }
+  else if (p==='gold'){ const g=c.createRadialGradient(-R*0.4,-R*0.4,R*0.1,0,0,R*1.2); g.addColorStop(0,'#fff6c2'); g.addColorStop(0.45,'#ffcc33'); g.addColorStop(1,c2); c.fillStyle=g; c.fillRect(-R*1.3,-R*1.3,R*2.6,R*2.6); }
+  c.restore();
+}
+function starPath(c,x,y,rr,col){ c.beginPath(); for (let i=0;i<10;i++){ const a=-1.5708+i*0.6283, q=i%2?rr*0.45:rr; c.lineTo(x+Math.cos(a)*q, y+Math.sin(a)*q); } c.closePath(); c.fillStyle=col; c.fill(); }
+// a cap (circle) or a suit (ellipse) with its design, centered at (x,y), turned to face (fx,fy)
+function paintDesign(c, d, x, y, rx, ry, fx, fy){
+  c.save(); c.translate(x,y); c.rotate(Math.atan2(fy,fx));
+  c.beginPath(); c.ellipse(0,0,rx,ry,0,0,6.283); c.fillStyle=d.base; c.fill(); c.clip();
+  if (d.pat && d.pat!=='solid') paintPat(c, d, Math.max(rx,ry));
+  c.restore();
+}
+// extras on top of the cap: goggles/shades go under the eyes, the rest on top
+function paintExtraFace(c, ex, sx, sy, r, fx, fy, nx, ny){
+  if (ex!=='goggles' && ex!=='shades') return;
+  c.strokeStyle='#0b1e33'; c.lineWidth=Math.max(1.5,r*0.12);
+  c.beginPath(); c.moveTo(sx+fx*r*0.5+nx*r*0.95, sy+fy*r*0.5+ny*r*0.95); c.lineTo(sx+fx*r*0.5-nx*r*0.95, sy+fy*r*0.5-ny*r*0.95); c.stroke();
+  for (const s of [-1,1]){ const ex2=sx+fx*r*0.62+nx*s*r*0.27, ey=sy+fy*r*0.62+ny*s*r*0.27;
+    c.fillStyle= ex==='shades' ? '#111827' : '#3fa9f5'; c.strokeStyle='#0b1e33'; c.lineWidth=1.5; c.beginPath(); c.arc(ex2,ey,r*(ex==='shades'?0.3:0.27),0,6.283); c.fill(); c.stroke();
+    if (ex==='shades'){ c.fillStyle='rgba(255,255,255,0.6)'; c.beginPath(); c.arc(ex2-r*0.08,ey-r*0.08,r*0.07,0,6.283); c.fill(); } }
+}
+function paintExtraTop(c, ex, sx, sy, r, fx, fy, nx, ny, t){
+  c.strokeStyle='#0b1e33'; c.lineWidth=1.8;
+  if (ex==='mohawk'){ c.fillStyle='#ff4d5e'; for (let k=-2;k<=1;k++){ const bx=sx+fx*r*k*0.28, by=sy+fy*r*k*0.28; c.beginPath(); c.moveTo(bx+nx*r*0.18,by+ny*r*0.18); c.lineTo(bx-fx*r*0.35+(0)*nx,by-fy*r*0.35-r*0.5); c.lineTo(bx-nx*r*0.18,by-ny*r*0.18); c.closePath(); c.fill(); c.stroke(); } }
+  else if (ex==='horns'){ for (const s of [-1,1]){ const bx=sx+nx*s*r*0.8, by=sy+ny*s*r*0.8, tx=bx+nx*s*r*0.7-fx*r*0.15, ty=by+ny*s*r*0.7-fy*r*0.15-r*0.45;
+      c.fillStyle='#fff6e0'; c.beginPath(); c.moveTo(bx-fx*r*0.2,by-fy*r*0.2); c.quadraticCurveTo(bx+nx*s*r*0.75+fx*r*0.2,by+ny*s*r*0.75+fy*r*0.2,tx,ty); c.quadraticCurveTo(bx+nx*s*r*0.3+fx*r*0.25,by+ny*s*r*0.3+fy*r*0.25-r*0.1,bx+fx*r*0.2,by+fy*r*0.2); c.closePath(); c.fill(); c.stroke(); } }
+  else if (ex==='halo'){ const tt=(t||0); c.strokeStyle='#ffd23f'; c.lineWidth=Math.max(2.5,r*0.18); c.shadowColor='#fff3a0'; c.shadowBlur=r*0.6; c.beginPath(); c.ellipse(sx,sy-r*1.35+Math.sin(tt*3)*r*0.08,r*0.8,r*0.28,0,0,6.283); c.stroke(); c.shadowBlur=0; }
+  else if (ex==='crown'){ const cy=sy-r*1.25, w=r*0.62, h=r*0.55; c.fillStyle='#ffc400';
+    c.beginPath(); c.moveTo(sx-w,cy); c.lineTo(sx-w,cy-h); c.lineTo(sx-w*0.5,cy-h*0.45); c.lineTo(sx,cy-h*1.1); c.lineTo(sx+w*0.5,cy-h*0.45); c.lineTo(sx+w,cy-h); c.lineTo(sx+w,cy); c.closePath(); c.fill(); c.stroke(); }
+}
+// team logo badge
+const EMOJI_FONT='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla",sans-serif';
+function drawLogo(c, lo, x, y, R, alpha){
+  if (!lo) return;
+  c.save(); if (alpha!=null) c.globalAlpha=alpha;
+  const shape=()=>{ c.beginPath();
+    if (lo.shape==='circle') c.arc(x,y,R,0,6.283);
+    else if (lo.shape==='shield'){ c.moveTo(x-R*0.9,y-R*0.85); c.lineTo(x+R*0.9,y-R*0.85); c.lineTo(x+R*0.9,y-R*0.1); c.quadraticCurveTo(x+R*0.85,y+R*0.65,x,y+R*1.05); c.quadraticCurveTo(x-R*0.85,y+R*0.65,x-R*0.9,y-R*0.1); c.closePath(); }
+    else if (lo.shape==='hex'){ for (let i=0;i<6;i++){ const a=i*1.0472-1.5708; c.lineTo(x+Math.cos(a)*R,y+Math.sin(a)*R); } c.closePath(); }
+    else if (lo.shape==='diamond'){ c.moveTo(x,y-R*1.05); c.lineTo(x+R*0.95,y); c.lineTo(x,y+R*1.05); c.lineTo(x-R*0.95,y); c.closePath(); }
+    else if (lo.shape==='star'){ for (let i=0;i<10;i++){ const a=-1.5708+i*0.6283, q=i%2?R*0.62:R*1.08; c.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q); } c.closePath(); }
+    else { for (let i=0;i<24;i++){ const a=i*0.2618, q=i%2?R*0.86:R*1.02; c.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q); } c.closePath(); } };   // burst
+  shape(); c.fillStyle='#0b1e33'; c.fill();                                   // dark outline
+  c.save(); c.translate(x,y); c.scale(0.86,0.86); c.translate(-x,-y); shape(); c.fillStyle=lo.c1; c.fill(); c.lineWidth=Math.max(1.5,R*0.1); c.strokeStyle=lo.c2; c.stroke(); c.restore();
+  c.font=`${Math.round(R*(lo.shape==='star'?0.75:0.95))}px ${EMOJI_FONT}`; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(lo.emoji, x, y+R*(lo.shape==='shield'?0.02:0.06));
+  c.restore();
+}
+
 /* ---- stars & unlocks (stars now turn into XP) ---- */
 const UNLOCKS = [
   { at:3,  kind:'ball',  id:'beach',     name:'Beach ball' },
@@ -2411,7 +2605,7 @@ function pickChallenges(){
 }
 function pickChStar(){ return 2 + Math.floor(Math.random()*5); }   // one of the five starters
 function chLabel(id, num){ const c=CHALLENGES[id]; return c.text({ starName:S.roster[(num||2)-1]||'Your team' }); }
-function homeCfg(){ const g=gear(), c=itemOf('cap',g.cap), su=itemOf('suit',g.suit); return { name:S.team.trim()||'Ngen Aquatics', short:shortOf(S.team), cap:c.col, capPat:c.pat||null, suit:su.col, gear:g.extra, numCol:'#ffffff', roster:S.roster, star:S.star, trim: g.extra==='goldears' ? '#ffd23f' : null }; }
+function homeCfg(){ const g=gear(), c=itemOf('cap',g.cap), su=itemOf('suit',g.suit); return { name:S.team.trim()||'Ngen Aquatics', short:shortOf(S.team), cap:c.base, capD:c, suitD:su, gear:g.extra, logo:itemOf('logo',g.logo), numCol:c.num, roster:S.roster, star:S.star, trim: g.extra==='goldears' ? '#ffd23f' : null }; }
 function rivalCfg(id){ const c=teamCfg(id); c.rating*=rivalMul(plLevel()); return c; }
 function awayCfg(){ return rivalCfg((LEAGUE_TEAMS[S.opp]||LEAGUE_TEAMS[0]).id); }
 /* ---- season storage ---- */
@@ -2483,6 +2677,10 @@ function drawWorld(){
   // painted pool floor: team name
   ctx.save(); ctx.globalAlpha=0.13; ctx.fillStyle='#03304f'; ctx.textAlign='center'; ctx.textBaseline='middle';
   const [cx,cy]=w2s(12.5,10); ctx.font=`${Math.round(Sc*2.1)}px ${FONT_D}`; ctx.fillText(T(0).name.toUpperCase(),cx,cy-Sc*3.6); ctx.fillText('NGEN H2O',cx,cy+Sc*3.8); ctx.restore();
+  // team logos painted on the pool floor
+  { const L0=T(0).logo, L1=T(1).logo;
+    if (L0 && L1){ for (const t of G.teams){ const [lx,ly]=w2s(t.dir>0?6.25:18.75,10); drawLogo(ctx, t.logo, lx, ly, Sc*1.6, 0.28); } }
+    else if (L0){ drawLogo(ctx, L0, cx, cy, Sc*1.9, 0.3); } }
   // caustics
   const sc=Sc*4/256;
   for (const [a,spd,al] of [[0,0.35,0.22],[1,-0.22,0.15]]){
@@ -2573,12 +2771,8 @@ function drawPlayer(p){
   // body under water
   ctx.save(); ctx.translate(sx-fx*r*1.15, sy-fy*r*1.15); ctx.rotate(Math.atan2(fy,fx));
   ctx.fillStyle='rgba(8,48,79,0.35)'; ctx.beginPath(); ctx.ellipse(0,0,r*1.45,r*0.85,0,0,6.283); ctx.fill();
-  if (t.suit && !p.gk){   // swim suit, seen through the water
-    let sc=t.suit;
-    if (sc==='rainbow'){ const g=ctx.createLinearGradient(0,-r*0.7,0,r*0.7); ['#ff4d5e','#ffd23f','#2fbf8f','#3fa7ff','#8c6bff'].forEach((c,i)=>g.addColorStop(i/4,c)); sc=g; }
-    ctx.globalAlpha=0.8; ctx.fillStyle=sc; ctx.beginPath(); ctx.ellipse(-r*0.75,0,r*0.6,r*0.72,0,0,6.283); ctx.fill(); ctx.globalAlpha=1;
-  }
   ctx.restore();
+  if (t.suitD && !p.gk){ paintDesign(ctx, t.suitD, sx-fx*r*1.65, sy-fy*r*1.65, r*0.8, r*0.72, fx, fy); ctx.save(); ctx.translate(sx-fx*r*1.65, sy-fy*r*1.65); ctx.rotate(Math.atan2(fy,fx)); ctx.strokeStyle='rgba(11,30,51,0.6)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.ellipse(0,0,r*0.8,r*0.72,0,0,6.283); ctx.stroke(); ctx.restore(); }
   // arms
   const sw = sp>0.5 ? Math.sin(p.phase) : Math.sin(p.phase*0.6)*0.35;
   ctx.fillStyle='#f1b98c'; ctx.strokeStyle='#0b1e33'; ctx.lineWidth=1.5;
@@ -2593,10 +2787,7 @@ function drawPlayer(p){
   const cap=capOf(p);
   ctx.fillStyle='#0b1e33'; ctx.beginPath(); ctx.arc(sx,sy+r*0.12,r*1.04,0,6.283); ctx.fill();
   ctx.fillStyle=cap; ctx.beginPath(); ctx.arc(sx,sy,r,0,6.283); ctx.fill();
-  if (t.capPat && !p.gk){ ctx.save(); ctx.beginPath(); ctx.arc(sx,sy,r,0,6.283); ctx.clip();
-    if (t.capPat==='stripes'){ ctx.strokeStyle='#ffd23f'; ctx.lineWidth=r*0.2; for (const s of [-0.42,0.42]){ ctx.beginPath(); ctx.moveTo(sx+nx*s*r-fx*r*1.1, sy+ny*s*r-fy*r*1.1); ctx.lineTo(sx+nx*s*r+fx*r*1.1, sy+ny*s*r+fy*r*1.1); ctx.stroke(); } }
-    else if (t.capPat==='stars'){ for (const s of [-1,1]) drawStar(sx-fx*r*0.25+nx*s*r*0.6, sy-fy*r*0.25+ny*s*r*0.6, r*0.24, '#ffd23f'); }
-    ctx.restore(); }
+  if (t.capD && !p.gk) paintDesign(ctx, t.capD, sx, sy, r, r, fx, fy);
   // face window
   ctx.save(); ctx.beginPath(); ctx.arc(sx,sy,r*0.97,0,6.283); ctx.clip();
   const fcx=sx+fx*r*0.62, fcy=sy+fy*r*0.62;
@@ -2604,28 +2795,20 @@ function drawPlayer(p){
   ctx.restore();
   // ear guards
   for (const s of [-1,1]){ ctx.fillStyle=p.gk ? cap : (t.trim||cap); ctx.strokeStyle='#0b1e33'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(sx+nx*s*r*0.88,sy+ny*s*r*0.88,r*0.3,0,6.283); ctx.fill(); ctx.stroke(); }
-  // level look: goggles (Lv 7+)
-  if (t.gear==='goggles' && !p.gk){
-    ctx.strokeStyle='#0b1e33'; ctx.lineWidth=Math.max(1.5,r*0.12);
-    ctx.beginPath(); ctx.moveTo(sx+fx*r*0.5+nx*r*0.95, sy+fy*r*0.5+ny*r*0.95); ctx.lineTo(sx+fx*r*0.5-nx*r*0.95, sy+fy*r*0.5-ny*r*0.95); ctx.stroke();
-    for (const s of [-1,1]){ const ex=sx+fx*r*0.62+nx*s*r*0.27, ey=sy+fy*r*0.62+ny*s*r*0.27;
-      ctx.fillStyle='#3fa9f5'; ctx.strokeStyle='#0b1e33'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(ex,ey,r*0.27,0,6.283); ctx.fill(); ctx.stroke(); }
-  }
+  if (t.gear && !p.gk) paintExtraFace(ctx, t.gear, sx, sy, r, fx, fy, nx, ny);
   // eyes
-  for (const s of [-1,1]){
+  if (!(t.gear==='shades' && !p.gk)) for (const s of [-1,1]){
     const ex=sx+fx*r*0.62+nx*s*r*0.27, ey=sy+fy*r*0.62+ny*s*r*0.27;
     ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(ex,ey,r*0.17,r*0.2,0,0,6.283); ctx.fill();
     ctx.fillStyle='#0b1e33'; ctx.beginPath(); ctx.arc(ex+fx*r*0.06,ey+fy*r*0.06,r*0.09,0,6.283); ctx.fill();
   }
   // number on back of cap
-  ctx.fillStyle = p.gk ? '#ffffff' : t.numCol; ctx.font=`${Math.round(r*0.95)}px ${FONT_D}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`${Math.round(r*0.95)}px ${FONT_D}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  if (t.capD && !p.gk && t.capD.pat!=='solid'){ ctx.lineJoin='round'; ctx.lineWidth=r*0.16; ctx.strokeStyle = t.numCol==='#ffffff' ? '#0b1e33' : '#ffffff'; ctx.strokeText(String(p.num), sx-fx*r*0.38, sy-fy*r*0.38+1); }
+  ctx.fillStyle = p.gk ? '#ffffff' : t.numCol;
   ctx.fillText(String(p.num), sx-fx*r*0.38, sy-fy*r*0.38+1);
   ctx.strokeStyle='#0b1e33'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(sx,sy,r,0,6.283); ctx.stroke();
-  if (t.gear==='crown' && !p.gk){   // champion crown
-    const cy=sy-r*1.25, w=r*0.62, h=r*0.55;
-    ctx.fillStyle='#ffc400'; ctx.strokeStyle='#0b1e33'; ctx.lineWidth=1.8;
-    ctx.beginPath(); ctx.moveTo(sx-w,cy); ctx.lineTo(sx-w,cy-h); ctx.lineTo(sx-w*0.5,cy-h*0.45); ctx.lineTo(sx,cy-h*1.1); ctx.lineTo(sx+w*0.5,cy-h*0.45); ctx.lineTo(sx+w,cy-h); ctx.lineTo(sx+w,cy); ctx.closePath(); ctx.fill(); ctx.stroke();
-  }
+  if (t.gear && !p.gk) paintExtraTop(ctx, t.gear, sx, sy, r, fx, fy, nx, ny, G.t);
   if (isCtrl){
     const by=sy-r*2.4;
     ctx.fillStyle='#ffd23f'; ctx.strokeStyle='#0b1e33'; ctx.lineWidth=2;
@@ -2698,7 +2881,8 @@ function drawPassBubble(){
 }
 
 // Name and energy bar under each swimmer
-function drawStar(x,y,rr,col){
+function drawStar(x,y,rr,col){ starPath(ctx,x,y,rr,col); ctx.strokeStyle='#0b1e33'; ctx.lineWidth=1.3; ctx.stroke(); }
+function drawStarOld(x,y,rr,col){
   ctx.beginPath(); for (let i=0;i<10;i++){ const a=-1.5708+i*0.6283, q=i%2?rr*0.45:rr; ctx.lineTo(x+Math.cos(a)*q, y+Math.sin(a)*q); } ctx.closePath();
   ctx.fillStyle=col; ctx.fill(); ctx.strokeStyle='#0b1e33'; ctx.lineWidth=1.3; ctx.stroke();
 }
@@ -2751,13 +2935,19 @@ function drawExcluded(p){
 }
 
 // Paints a ball skin on any 2D context (game canvas or unlock icon)
+const BALL_PAT={ galaxy:{ base:'#1a1240', pat:'galaxy', c2:'#ff7ad9' }, lava:{ base:'#3a0d0d', pat:'lava', c2:'#ff6a1f', c3:'#ffd23f' },
+  ice:{ base:'#f2fbff', pat:'ice', c2:'#a8e6ff' }, candy:{ base:'#ffffff', pat:'candy', c2:'#ff4d8a' }, disco:{ base:'#c9d3da', pat:'checker', c2:'#7d8b96' },
+  diamond:{ base:'#bfefff', pat:'ice', c2:'#ffffff' }, fire:{ base:'#ff5a1f', pat:'flames', c2:'#ffd23f', c3:'#fff6c2' } };
 function ballPainter(c, sx, by, r, skin, a){
   c.lineWidth=Math.max(1.6,r*0.06); c.strokeStyle='#0b1e33';
+  const BASE={ beach:'#ffffff', rainbow:'#ff6a4d', melon:'#ff5a6e', basket:'#ff8a2b', smile:'#ffd23f', planet:'#8c6bff', tennis:'#d7f542', eye:'#ffffff', pizza:'#ffcf6b' };
   if (skin==='gold'){ const g=c.createRadialGradient(sx-r*0.4,by-r*0.4,r*0.1,sx,by,r); g.addColorStop(0,'#fff6c2'); g.addColorStop(0.5,'#ffcc33'); g.addColorStop(1,'#c88a00'); c.fillStyle=g; }
-  else c.fillStyle = skin==='beach' ? '#ffffff' : skin==='rainbow' ? '#ff6a4d' : '#ffd23f';
+  else c.fillStyle = BALL_PAT[skin] ? BALL_PAT[skin].base : (BASE[skin] || '#ffd23f');
   c.beginPath(); c.arc(sx,by,r,0,6.283); c.fill(); c.stroke();
   c.save(); c.beginPath(); c.arc(sx,by,r,0,6.283); c.clip();
-  if (skin==='beach'){
+  if (BALL_PAT[skin]){ c.translate(sx,by); c.rotate(a); paintPat(c, BALL_PAT[skin], r);
+    if (skin==='disco'){ c.fillStyle='#ffffff'; for (let i=0;i<4;i++){ const q=(i*1.7+a*2)%6.283; starPath(c,Math.cos(q)*r*0.5,Math.sin(q)*r*0.5,r*0.18,'#ffffff'); } } }
+  else if (skin==='beach'){
     const cols=['#e5383b','#ffffff','#1f6fd6','#ffffff','#ffd23f','#ffffff'];
     for (let i=0;i<6;i++){ c.fillStyle=cols[i]; c.beginPath(); c.moveTo(sx,by); c.arc(sx,by,r,a+i*1.047,a+(i+1)*1.047); c.closePath(); c.fill(); }
     c.fillStyle='#fff'; c.beginPath(); c.arc(sx,by,r*0.2,0,6.283); c.fill();
@@ -2765,14 +2955,43 @@ function ballPainter(c, sx, by, r, skin, a){
     const cols=['#ff4d5e','#ff9f45','#ffd23f','#2fbf8f','#3fa7ff','#8c6bff'];
     for (let i=0;i<6;i++){ c.fillStyle=cols[i]; c.fillRect(sx-r, by-r+i*(2*r/6) + ((a*r*0.5)%(2*r/6)) - 2*r/6, 2*r, 2*r/6+1); }
     for (let i=0;i<6;i++){ c.fillStyle=cols[i]; c.fillRect(sx-r, by-r+i*(2*r/6) + ((a*r*0.5)%(2*r/6)), 2*r, 2*r/6+1); }
+  } else if (skin==='melon'){
+    c.strokeStyle='#2fa84f'; c.lineWidth=r*0.32; c.beginPath(); c.arc(sx,by,r,0,6.283); c.stroke();
+    c.strokeStyle='#eaffd8'; c.lineWidth=r*0.1; c.beginPath(); c.arc(sx,by,r*0.8,0,6.283); c.stroke();
+    c.fillStyle='#1c1c25'; for (let i=0;i<6;i++){ const q=a+i*1.047; c.beginPath(); c.ellipse(sx+Math.cos(q)*r*0.42,by+Math.sin(q)*r*0.42,r*0.07,r*0.12,q,0,6.283); c.fill(); }
+  } else if (skin==='basket'){
+    c.strokeStyle='#1c1c25'; c.lineWidth=Math.max(1.2,r*0.09);
+    c.beginPath(); c.ellipse(sx,by,r*Math.abs(Math.cos(a)),r,0,0,6.283); c.stroke();
+    c.beginPath(); c.moveTo(sx-r,by); c.lineTo(sx+r,by); c.stroke();
+    c.beginPath(); c.ellipse(sx,by,r*Math.abs(Math.sin(a)),r,0,0,6.283); c.stroke();
+  } else if (skin==='smile'){
+    c.translate(sx,by); c.rotate(Math.sin(a)*0.4); c.fillStyle='#0b1e33';
+    for (const s of [-1,1]){ c.beginPath(); c.ellipse(s*r*0.32,-r*0.22,r*0.11,r*0.17,0,0,6.283); c.fill(); }
+    c.strokeStyle='#0b1e33'; c.lineWidth=Math.max(1.2,r*0.1); c.lineCap='round'; c.beginPath(); c.arc(0,r*0.02,r*0.48,0.35,2.8); c.stroke();
+  } else if (skin==='planet'){
+    c.translate(sx,by); c.rotate(-0.4); for (let i=-3;i<=3;i++){ c.fillStyle=i%2?'#b07cff':'#6b4bd6'; c.fillRect(-r,i*r*0.3-r*0.08+((a*r*0.2)%(r*0.3)),2*r,r*0.14); }
+  } else if (skin==='tennis'){
+    c.translate(sx,by); c.rotate(a); c.strokeStyle='#ffffff'; c.lineWidth=Math.max(1.4,r*0.11);
+    c.beginPath(); c.arc(-r*1.15,0,r*0.85,-0.9,0.9); c.stroke(); c.beginPath(); c.arc(r*1.15,0,r*0.85,Math.PI-0.9,Math.PI+0.9); c.stroke();
+  } else if (skin==='eye'){
+    const ix=sx+Math.cos(a)*r*0.25, iy=by+Math.sin(a*0.7)*r*0.2;
+    c.strokeStyle='#ff6a6a'; c.lineWidth=Math.max(1,r*0.05); for (let i=0;i<5;i++){ const q=i*1.25+0.3; c.beginPath(); c.moveTo(sx+Math.cos(q)*r,by+Math.sin(q)*r); c.lineTo(sx+Math.cos(q+0.2)*r*0.7,by+Math.sin(q+0.2)*r*0.7); c.stroke(); }
+    c.fillStyle='#2f8fe0'; c.beginPath(); c.arc(ix,iy,r*0.42,0,6.283); c.fill();
+    c.fillStyle='#0b1e33'; c.beginPath(); c.arc(ix,iy,r*0.2,0,6.283); c.fill();
+  } else if (skin==='pizza'){
+    c.strokeStyle='#c27a2c'; c.lineWidth=r*0.28; c.beginPath(); c.arc(sx,by,r,0,6.283); c.stroke();
+    c.fillStyle='#d6362f'; for (let i=0;i<5;i++){ const q=a+i*1.2566; c.beginPath(); c.arc(sx+Math.cos(q)*r*0.45,by+Math.sin(q)*r*0.45,r*0.17,0,6.283); c.fill(); }
+    c.beginPath(); c.arc(sx,by,r*0.15,0,6.283); c.fill();
   } else {
     c.strokeStyle = skin==='gold' ? '#a86b00' : '#1d4fa8'; c.lineWidth=Math.max(1.5,r*0.22);
     for (const k of [0,1.05,2.1]){ c.beginPath(); c.ellipse(sx,by,r*Math.abs(Math.cos(a+k)),r,0,0,6.283); c.stroke(); }
   }
   c.restore();
   c.strokeStyle='#0b1e33'; c.lineWidth=Math.max(1.6,r*0.06); c.beginPath(); c.arc(sx,by,r,0,6.283); c.stroke();
+  if (skin==='planet'){ c.save(); c.strokeStyle='#ffd23f'; c.lineWidth=Math.max(1.5,r*0.14); c.beginPath(); c.ellipse(sx,by,r*1.45,r*0.38,-0.4,0.15,Math.PI-0.15); c.stroke(); c.restore(); }
   c.fillStyle='rgba(255,255,255,0.7)'; c.beginPath(); c.arc(sx-r*0.35,by-r*0.35,r*0.22,0,6.283); c.fill();
 }
+
 function drawBall(){
   const b=G.ball;
   const [sx,sy]=w2s(b.x,b.y);
@@ -2835,7 +3054,8 @@ function drawHUD(){
   for (const t of G.teams){
     const side=t.id===0?-1:1;
     const capX=cx+side*(W/2-22);
-    ctx.fillStyle=t.cap; ctx.strokeStyle='#0b1e33'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(capX,top+h/2,11,0,6.283); ctx.fill(); ctx.stroke();
+    if (t.logo) drawLogo(ctx, t.logo, capX, top+h/2, 14);
+    else { ctx.fillStyle=t.cap; ctx.strokeStyle='#0b1e33'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(capX,top+h/2,11,0,6.283); ctx.fill(); ctx.stroke(); }
     if (G.poss===t.id && G.state==='play'){ ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(capX,top+h/2,4.5,0,6.283); ctx.fill(); ctx.strokeStyle='#0b1e33'; ctx.lineWidth=1.5; ctx.stroke(); }
     ctx.fillStyle='#0b1e33'; ctx.font=`${small?13:16}px ${FONT_D}`; ctx.textAlign=side<0?'left':'right';
     ctx.fillText(t.short, capX-side*18, top+h/2+1);
@@ -3256,6 +3476,7 @@ function buildMenu(){
   syncEdition(); syncSound();
   const se=SEASON, sr=se ? se.rec[HOME_ID] : null;
   $('starBar').innerHTML = levelBarHTML(S.pxp);
+  syncLockerBtn();
   $('recordLine').innerHTML = `All-time record <b>${S.record.w}–${S.record.l}</b>` + (sr ? ` · Season ${se.n} <b>${sr.w}–${sr.l}</b>${se.done?' (finished)':''}` : '');
 }
 function buildStar(){
@@ -3491,60 +3712,105 @@ function showEnd(){
   $('replayBtn').hidden = !G.best;
   $('end').hidden=false; $('end').scrollTop=0;
 }
+// a swimmer seen from above, for the locker preview and item icons
+function drawAvatar(c, x, y, r, g, opts){
+  const cd=itemOf('cap',g.cap)||ITEMS[0], sd=itemOf('suit',g.suit), ex=g.extra, fx=opts&&opts.fx!=null?opts.fx:1, fy=opts&&opts.fy!=null?opts.fy:0, nx=-fy, ny=fx;
+  if (sd){ c.save(); c.translate(x-fx*r*1.15, y-fy*r*1.15); c.rotate(Math.atan2(fy,fx));
+    c.fillStyle='rgba(8,48,79,0.35)'; c.beginPath(); c.ellipse(0,0,r*1.45,r*0.85,0,0,6.283); c.fill(); c.restore();
+    paintDesign(c, sd, x-fx*r*1.65, y-fy*r*1.65, r*0.8, r*0.72, fx, fy);
+    c.save(); c.strokeStyle='#0b1e33'; c.lineWidth=1.5; c.beginPath(); c.translate(x-fx*r*1.65, y-fy*r*1.65); c.rotate(Math.atan2(fy,fx)); c.ellipse(0,0,r*0.8,r*0.72,0,0,6.283); c.stroke(); c.restore(); }
+  c.fillStyle='#f1b98c'; c.strokeStyle='#0b1e33'; c.lineWidth=1.5;
+  for (const s of [-1,1]){ c.beginPath(); c.arc(x+nx*s*r*1.15+fx*s*r*0.3, y+ny*s*r*1.15+fy*s*r*0.3, r*0.34, 0, 6.283); c.fill(); c.stroke(); }
+  c.fillStyle='#0b1e33'; c.beginPath(); c.arc(x,y+r*0.12,r*1.04,0,6.283); c.fill();
+  paintDesign(c, cd, x, y, r, r, fx, fy);
+  c.save(); c.beginPath(); c.arc(x,y,r*0.97,0,6.283); c.clip(); c.fillStyle='#f6c49a'; c.beginPath(); c.arc(x+fx*r*0.62,y+fy*r*0.62,r*0.72,0,6.283); c.fill(); c.restore();
+  for (const s of [-1,1]){ c.fillStyle= ex==='goldears' ? '#ffd23f' : cd.base; c.strokeStyle='#0b1e33'; c.lineWidth=1.2; c.beginPath(); c.arc(x+nx*s*r*0.88,y+ny*s*r*0.88,r*0.3,0,6.283); c.fill(); c.stroke(); }
+  paintExtraFace(c, ex, x, y, r, fx, fy, nx, ny);
+  if (ex!=='shades') for (const s of [-1,1]){ const ex2=x+fx*r*0.62+nx*s*r*0.27, ey=y+fy*r*0.62+ny*s*r*0.27;
+    c.fillStyle='#fff'; c.beginPath(); c.ellipse(ex2,ey,r*0.17,r*0.2,0,0,6.283); c.fill(); c.fillStyle='#0b1e33'; c.beginPath(); c.arc(ex2+fx*r*0.06,ey+fy*r*0.06,r*0.09,0,6.283); c.fill(); }
+  c.font=`${Math.round(r*0.95)}px ${FONT_D}`; c.textAlign='center'; c.textBaseline='middle'; c.lineJoin='round';
+  c.lineWidth=r*0.16; c.strokeStyle = cd.num==='#ffffff' ? '#0b1e33' : '#ffffff'; c.strokeText('7', x-fx*r*0.38, y-fy*r*0.38+1);
+  c.fillStyle=cd.num; c.fillText('7', x-fx*r*0.38, y-fy*r*0.38+1);
+  c.strokeStyle='#0b1e33'; c.lineWidth=1.5; c.beginPath(); c.arc(x,y,r,0,6.283); c.stroke();
+  paintExtraTop(c, ex, x, y, r, fx, fy, nx, ny, 0);
+}
 function drawUnlockIcon(cv2, u){
-  const c=cv2.getContext('2d'); c.clearRect(0,0,96,96);
-  c.save(); c.translate(48,48);
+  const c=cv2.getContext('2d'), W=cv2.width; c.clearRect(0,0,W,W);
+  c.save(); c.scale(W/96,W/96); c.translate(48,48);
   const ink='#0b1e33';
   if (u.kind==='cap'){
-    c.lineWidth=3; c.strokeStyle=ink; c.fillStyle=u.col; c.beginPath(); c.arc(0,4,32,0,6.283); c.fill();
-    c.save(); c.beginPath(); c.arc(0,4,32,0,6.283); c.clip();
-    if (u.pat==='stripes'){ c.fillStyle='#ffd23f'; c.fillRect(-18,-30,8,70); c.fillRect(10,-30,8,70); }
-    if (u.pat==='stars'){ for (const [x,y] of [[-14,-8],[14,-8],[0,16]]){ c.beginPath(); for (let i=0;i<10;i++){ const a=-1.5708+i*0.6283, q=i%2?4:9; c.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q); } c.closePath(); c.fillStyle='#ffd23f'; c.fill(); c.lineWidth=1.5; c.stroke(); } }
-    c.restore(); c.lineWidth=3; c.strokeStyle=ink; c.beginPath(); c.arc(0,4,32,0,6.283); c.stroke();
-    for (const s of [-1,1]){ c.fillStyle=u.col; c.beginPath(); c.arc(s*30,10,10,0,6.283); c.fill(); c.stroke(); }
-    c.fillStyle='#fff'; c.font='26px "Lilita One",sans-serif'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('7',0,6);
+    c.fillStyle=ink; c.beginPath(); c.arc(0,6,33,0,6.283); c.fill();
+    paintDesign(c, u, 0, 4, 32, 32, 0, 1);
+    c.lineWidth=3; c.strokeStyle=ink; c.beginPath(); c.arc(0,4,32,0,6.283); c.stroke();
+    for (const s of [-1,1]){ c.fillStyle=u.base; c.beginPath(); c.arc(s*30,10,10,0,6.283); c.fill(); c.lineWidth=2.5; c.stroke(); }
+    c.font='28px "Lilita One",sans-serif'; c.textAlign='center'; c.textBaseline='middle'; c.lineJoin='round';
+    c.lineWidth=5; c.strokeStyle = u.num==='#ffffff' ? ink : '#ffffff'; c.strokeText('7',0,6); c.fillStyle=u.num; c.fillText('7',0,6);
   } else if (u.kind==='suit'){
-    let f=u.col; if (f==='rainbow'){ f=c.createLinearGradient(-30,0,30,0); ['#ff4d5e','#ffd23f','#2fbf8f','#3fa7ff','#8c6bff'].forEach((k,i)=>f.addColorStop(i/4,k)); }
-    c.fillStyle=f; c.strokeStyle=ink; c.lineWidth=3; c.beginPath(); c.moveTo(-32,-20); c.lineTo(32,-20); c.lineTo(28,8); c.quadraticCurveTo(10,10,4,26); c.lineTo(-4,26); c.quadraticCurveTo(-10,10,-28,8); c.closePath(); c.fill(); c.stroke();
-    c.strokeStyle='rgba(255,255,255,.7)'; c.lineWidth=3; c.beginPath(); c.moveTo(-28,-12); c.lineTo(28,-12); c.stroke();
-  } else if (u.kind==='extra' && u.id==='none'){
-    c.strokeStyle='#8aa3b3'; c.lineWidth=4; c.beginPath(); c.arc(0,0,24,0,6.283); c.moveTo(-17,17); c.lineTo(17,-17); c.stroke();
-  } else if (u.kind==='extra' && u.id==='goggles'){
-    c.strokeStyle=ink; c.lineWidth=5; c.beginPath(); c.moveTo(-40,0); c.lineTo(40,0); c.stroke();
-    for (const s of [-1,1]){ c.fillStyle='#3fa9f5'; c.lineWidth=4; c.beginPath(); c.arc(s*16,0,14,0,6.283); c.fill(); c.stroke(); c.fillStyle='rgba(255,255,255,.7)'; c.beginPath(); c.arc(s*16-5,-5,4,0,6.283); c.fill(); }
-  } else if (u.kind==='extra' && u.id==='crown'){
-    c.fillStyle='#ffc400'; c.strokeStyle=ink; c.lineWidth=3; c.beginPath(); c.moveTo(-32,20); c.lineTo(-32,-14); c.lineTo(-16,2); c.lineTo(0,-24); c.lineTo(16,2); c.lineTo(32,-14); c.lineTo(32,20); c.closePath(); c.fill(); c.stroke();
-    for (const x of [-16,0,16]){ c.fillStyle='#ff4d5e'; c.beginPath(); c.arc(x,10,4,0,6.283); c.fill(); }
-  } else if (u.kind==='celeb' && u.id==='confetti'){
-    const cols=['#ffd23f','#ff6a4d','#2fbf8f','#3fa7ff','#ff7ad9']; for (let i=0;i<14;i++){ c.save(); c.translate(Math.cos(i*2.4)*26, Math.sin(i*1.7)*26); c.rotate(i); c.fillStyle=cols[i%5]; c.fillRect(-5,-3,10,6); c.restore(); }
+    c.save(); c.beginPath(); c.moveTo(-34,-22); c.lineTo(34,-22); c.lineTo(30,6); c.quadraticCurveTo(10,8,5,28); c.lineTo(-5,28); c.quadraticCurveTo(-10,8,-30,6); c.closePath();
+    c.fillStyle=u.base; c.fill(); c.clip(); if (u.pat && u.pat!=='solid') paintPat(c, u, 34); c.restore();
+    c.strokeStyle=ink; c.lineWidth=3; c.beginPath(); c.moveTo(-34,-22); c.lineTo(34,-22); c.lineTo(30,6); c.quadraticCurveTo(10,8,5,28); c.lineTo(-5,28); c.quadraticCurveTo(-10,8,-30,6); c.closePath(); c.stroke();
+    c.strokeStyle='rgba(255,255,255,.75)'; c.lineWidth=3; c.beginPath(); c.moveTo(-31,-15); c.lineTo(31,-15); c.stroke();
   } else if (u.kind==='ball'){ ballPainter(c, 0, 0, 34, u.id, 0.6); }
-  else if (u.kind==='celeb' && u.id==='ducks'){ c.lineWidth=3; c.strokeStyle='#0b1e33'; c.fillStyle='#ffd23f'; c.beginPath(); c.ellipse(-4,10,30,20,0,0,6.283); c.fill(); c.stroke(); c.beginPath(); c.arc(14,-12,15,0,6.283); c.fill(); c.stroke(); c.fillStyle='#ff8c1a'; c.beginPath(); c.moveTo(27,-14); c.lineTo(42,-9); c.lineTo(27,-5); c.closePath(); c.fill(); c.stroke(); c.fillStyle='#0b1e33'; c.beginPath(); c.arc(18,-16,3,0,6.283); c.fill(); }
-  else if (u.kind==='celeb'){ const cols=['#ffd23f','#ff6a4d','#2fbf8f','#fff','#ff7ad9']; for (let i=0;i<16;i++){ const a=i/16*6.283; c.strokeStyle=cols[i%5]; c.lineWidth=4; c.lineCap='round'; c.beginPath(); c.moveTo(Math.cos(a)*10,Math.sin(a)*10); c.lineTo(Math.cos(a)*38,Math.sin(a)*38); c.stroke(); } }
-  else { /* golden ear guards */ c.fillStyle='#1f3c8f'; c.strokeStyle='#0b1e33'; c.lineWidth=3; c.beginPath(); c.arc(0,0,30,0,6.283); c.fill(); c.stroke(); for (const sx of [-1,1]){ c.fillStyle='#ffd23f'; c.beginPath(); c.arc(sx*28,0,11,0,6.283); c.fill(); c.stroke(); } }
+  else if (u.kind==='logo'){ drawLogo(c, u, 0, 2, 40); }
+  else if (u.kind==='extra'){
+    if (u.id==='none'){ c.strokeStyle='#8aa3b3'; c.lineWidth=4; c.beginPath(); c.arc(0,0,24,0,6.283); c.moveTo(-17,17); c.lineTo(17,-17); c.stroke(); }
+    else drawAvatar(c, 0, 10, 24, { cap:'navy', extra:u.id }, { fx:0, fy:1 });
+  }
+  else if (u.kind==='celeb' && u.id==='confetti'){
+    const cols=['#ffd23f','#ff6a4d','#2fbf8f','#3fa7ff','#ff7ad9']; for (let i=0;i<14;i++){ c.save(); c.translate(Math.cos(i*2.4)*26, Math.sin(i*1.7)*26); c.rotate(i); c.fillStyle=cols[i%5]; c.fillRect(-5,-3,10,6); c.restore(); }
+  }
+  else if (u.kind==='celeb' && u.id==='ducks'){ c.lineWidth=3; c.strokeStyle=ink; c.fillStyle='#ffd23f'; c.beginPath(); c.ellipse(-4,10,30,20,0,0,6.283); c.fill(); c.stroke(); c.beginPath(); c.arc(14,-12,16,0,6.283); c.fill(); c.stroke(); c.fillStyle='#ff9f45'; c.beginPath(); c.moveTo(28,-14); c.lineTo(42,-8); c.lineTo(28,-4); c.closePath(); c.fill(); c.stroke(); c.fillStyle=ink; c.beginPath(); c.arc(18,-16,3,0,6.283); c.fill(); }
+  else { const cols=['#ffd23f','#ff6a4d','#2fbf8f','#fff','#ff7ad9']; for (let i=0;i<16;i++){ const a=i/16*6.283; c.strokeStyle=cols[i%5]; c.lineWidth=4; c.lineCap='round'; c.beginPath(); c.moveTo(Math.cos(a)*10,Math.sin(a)*10); c.lineTo(Math.cos(a)*36,Math.sin(a)*36); c.stroke(); } }
   c.restore();
 }
-function openLocker(){ buildLocker(); $('menu').hidden=true; $('locker').hidden=false; $('locker').scrollTop=0; }
+let lkFresh=new Set();
+function openLocker(){ lkFresh=new Set(newItems().map(itemKey)); if (!S.lkTab) S.lkTab='cap'; buildLocker(); $('menu').hidden=true; $('locker').hidden=false; $('locker').scrollTop=0; }
+function drawLockerPreview(){
+  const cv=$('lkPrev'), w=cv.clientWidth||520, h=cv.clientHeight||170, d=Math.min(2,window.devicePixelRatio||1);
+  cv.width=Math.round(w*d); cv.height=Math.round(h*d);
+  const c=cv.getContext('2d'); c.setTransform(d,0,0,d,0,0); c.clearRect(0,0,w,h);
+  c.save(); c.globalAlpha=0.18; c.strokeStyle='#ffffff'; c.lineWidth=2; for (let i=0;i<5;i++){ c.beginPath(); for (let x=0;x<=w;x+=8) c.lineTo(x, 22+i*34+Math.sin(x/26+i)*5); c.stroke(); } c.restore();
+  const g=gear(), sc=Math.min(1.25, h/150), r=26*sc;
+  const ax=w*0.3;
+  c.fillStyle='rgba(255,255,255,0.35)'; c.beginPath(); c.ellipse(ax,h*0.52,r*2.6,r*1.5,0,0,6.283); c.fill();
+  drawAvatar(c, ax+r*0.4, h*0.52, r, g);
+  ballPainter(c, ax+r*2.1, h*0.52+r*0.9, r*0.55, g.ball, 0.6);
+  const lo=itemOf('logo',g.logo);
+  drawLogo(c, lo, w*0.72, h*0.44, Math.min(56, h*0.32));
+  c.font=`400 ${Math.round(15*sc)}px ${FONT_D}`; c.textAlign='center'; c.textBaseline='middle'; c.lineJoin='round'; c.lineWidth=4; c.strokeStyle='#0b1e33';
+  c.strokeText('NGEN AQUATICS', w*0.72, h*0.86); c.fillStyle='#ffffff'; c.fillText('NGEN AQUATICS', w*0.72, h*0.86);
+}
 function buildLocker(){
-  const L=plLevel(), g=gear();
+  const L=plLevel(), g=gear(), tab=S.lkTab||'cap';
   $('lkBar').innerHTML=levelBarHTML(S.pxp);
-  const box=$('lkSlots'); box.innerHTML='';
-  for (const [k,label] of SLOTS){
-    const sec=document.createElement('div'); sec.className='lkSlot'; sec.innerHTML=`<h4>${label}</h4><div class="lkGrid"></div>`;
-    const grid=sec.querySelector('.lkGrid');
-    for (const it of ITEMS.filter(i=>i.kind===k)){
-      const own=it.lv<=L, b=document.createElement('button'); b.type='button';
-      b.className='lkItem'+(own?'':' lock')+(g[k]===it.id?' on':''); b.disabled=!own;
-      b.setAttribute('aria-label', own ? `${it.name}${g[k]===it.id?' (wearing)':''}` : `${it.name}, unlocks at level ${it.lv}`);
-      b.innerHTML=`<canvas width="96" height="96"></canvas><span>${esc(it.name)}</span>${own?'':`<span class="lv">🔒 Level ${it.lv}</span>`}`;
-      drawUnlockIcon(b.querySelector('canvas'), it);
-      if (own) b.onclick=()=>{ S.gear={ ...gear(), [k]:it.id }; saveS(); SFX.init(); buildLocker(); startDemo(); };
-      grid.appendChild(b);
-    }
-    box.appendChild(sec);
+  const fresh=lkFresh;
+  $('lkTabs').innerHTML = SLOTS.map(([k,label])=>{ const n=ITEMS.filter(i=>i.kind===k && fresh.has(itemKey(i))).length;
+    return `<button role="tab" type="button" data-k="${k}" aria-selected="${k===tab}">${label}${n?`<span class="nb">${n}</span>`:''}</button>`; }).join('');
+  $('lkTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{ S.lkTab=b.dataset.k; saveS(); SFX.init(); buildLocker(); });
+  const grid=$('lkGrid'); grid.innerHTML='';
+  const list=ITEMS.filter(i=>i.kind===tab), owned=list.filter(i=>i.lv<=L).length;
+  for (const it of list){
+    const own=it.lv<=L, b=document.createElement('button'); b.type='button';
+    b.className='lkItem'+(own?'':' lock')+(g[tab]===it.id?' on':''); b.disabled=!own;
+    b.setAttribute('aria-label', own ? `${it.name}${g[tab]===it.id?' (wearing)':''}` : `${it.name}, unlocks at level ${it.lv}`);
+    b.innerHTML=`${own && fresh.has(itemKey(it))?'<span class="new">NEW</span>':''}<canvas width="108" height="108"></canvas><span>${esc(it.name)}</span>${own?'':`<span class="lv">🔒 Level ${it.lv}</span>`}`;
+    drawUnlockIcon(b.querySelector('canvas'), it);
+    if (own) b.onclick=()=>{ S.gear={ ...gear(), [tab]:it.id }; saveS(); SFX.init(); SFX.click(); buildLocker(); startDemo(); };
+    grid.appendChild(b);
   }
+  $('lkCount').textContent=`${owned} of ${list.length} unlocked`;
+  // everything in this tab has now been seen
+  S.seen=S.seen||{}; for (const it of list) if (it.lv<=L) S.seen[itemKey(it)]=true; saveS();
+  drawLockerPreview();
+}
+function syncLockerBtn(){
+  const n=newItems().length, lo=itemOf('logo',gear().logo);
+  $('lockerBtn').innerHTML=`<canvas width="68" height="68" aria-hidden="true"></canvas><span>MY LOCKER</span>${n?`<span class="nb2">${n} new</span>`:''}`;
+  const c=$('lockerBtn').querySelector('canvas').getContext('2d'); c.clearRect(0,0,68,68); drawLogo(c, lo, 34, 35, 30);
 }
 $('lockerBtn').onclick=openLocker;
 $('lkDone').onclick=()=>{ $('locker').hidden=true; buildMenu(); $('menu').hidden=false; };
+window.addEventListener('resize',()=>{ if (!$('locker').hidden) drawLockerPreview(); });
 $('playBtn').onclick=()=>startMatch({ mode:'quick' });
 $('seasonBtn').onclick=()=>{ readMenu(); openSeason(); };
 $('resumeBtn').onclick=togglePause;
@@ -3752,6 +4018,7 @@ function serverURL(){
 }
 const NET={ ws:null, phase:'idle', team:-1, names:null, a:0, b:0, lastSend:0, lastBD:false, tries:0, retryT:null, startT:0, me:null, lobby:{ players:[], recent:[] }, pendingTo:null, incoming:null };
 
+function logoChip(id){ const lo=itemOf('logo',id); return lo ? `<span class="lgc" style="background:${lo.c1};border-color:${lo.c2}" aria-hidden="true">${lo.emoji}</span>` : ''; }
 function fmtWhen(ts){
   const d=new Date(ts), p=n=>String(n).padStart(2,'0');
   let h=d.getHours(); const ap=h<12?'AM':'PM'; h=h%12||12;
@@ -3805,7 +4072,7 @@ function renderLobby(){
   const others=(L.players||[]).filter(p=>p.name.toLowerCase()!==me.toLowerCase()).sort((a,b)=>a.busy-b.busy || a.name.localeCompare(b.name));
   const live = NET.phase==='lobby';
   $('onList').innerHTML = !live ? '' : others.length ? others.map(p=>`
-    <div class="onP ${p.busy?'busy':''}"><span class="dot" aria-hidden="true"></span><div class="who"><b>${esc(p.name)}</b><span>${p.w}–${p.l}${p.busy?' · playing a game':''}</span></div>
+    <div class="onP ${p.busy?'busy':''}"><span class="dot" aria-hidden="true"></span><div class="who"><b>${logoChip(p.logo)}${esc(p.name)}</b><span>${p.w}–${p.l}${p.busy?' · playing a game':''}</span></div>
     ${p.busy ? '' : `<button class="btn small chal" data-n="${esc(p.name)}" ${NET.pendingTo?'disabled':''}>CHALLENGE</button>`}</div>`).join('')
     : `<p class="hint" style="margin:0;text-align:center">Nobody else is online yet. Ask a teammate to open Ngen H2O and go online!</p>`;
   $('onListWrap').hidden=!live;
@@ -3817,11 +4084,11 @@ function renderLobby(){
   $('onHist').hidden=!live;
   // every player's record (not just who's online)
   const recs=new Map(); for (const r of (L.board||[])) recs.set(r.name.toLowerCase(), { ...r });
-  for (const p of (L.players||[])) if (!recs.has(p.name.toLowerCase())) recs.set(p.name.toLowerCase(), { name:p.name, w:p.w, l:p.l });
+  for (const p of (L.players||[])){ const k=p.name.toLowerCase(); if (!recs.has(k)) recs.set(k, { name:p.name, w:p.w, l:p.l, logo:p.logo }); else if (p.logo) recs.get(k).logo=p.logo; }
   const on=new Set((L.players||[]).map(p=>p.name.toLowerCase()));
   const rows=[...recs.values()].sort((a,b)=>b.w-a.w || a.l-b.l || a.name.localeCompare(b.name));
   $('onBoard').innerHTML = rows.length ? rows.map((r,i)=>{ const g=r.w+r.l, pc=g?Math.round(r.w/g*100)+'%':'–';
-    return `<tr class="${r.name.toLowerCase()===me.toLowerCase()?'me':''}"><td>${i===0&&r.w?'🥇':i+1}</td><td>${esc(r.name)}${on.has(r.name.toLowerCase())?'<span class="od" aria-label="online"></span>':''}</td><td>${r.w}</td><td>${r.l}</td><td>${pc}</td></tr>`; }).join('')
+    return `<tr class="${r.name.toLowerCase()===me.toLowerCase()?'me':''}"><td>${i===0&&r.w?'🥇':i+1}</td><td>${logoChip(r.logo)}${esc(r.name)}${on.has(r.name.toLowerCase())?'<span class="od" aria-label="online"></span>':''}</td><td>${r.w}</td><td>${r.l}</td><td>${pc}</td></tr>`; }).join('')
     : `<tr class="none"><td colspan="5">No games yet</td></tr>`;
   $('onBoardWrap').hidden=!live;
   $('online').querySelector('.card').classList.toggle('wide', live);
@@ -3849,7 +4116,7 @@ function netConnect(){
   let ws;
   try { ws=new WebSocket(serverURL()); } catch(e){ return netFail(); }
   NET.ws=ws;
-  ws.onopen=()=>{ NET.tries=0; NET.phase='hello'; ws.send(JSON.stringify({ t:'hello', v:2, name:S.netName, code:S.teamCode })); };
+  ws.onopen=()=>{ NET.tries=0; NET.phase='hello'; ws.send(JSON.stringify({ t:'hello', v:2, name:S.netName, code:S.teamCode, logo:gear().logo })); };
   ws.onmessage=(e)=>{ let m; try{ m=JSON.parse(e.data); }catch(err){ return; } netMessage(m); };
   ws.onclose=()=>{ if (NET.ws!==ws) return; NET.ws=null; hideChal(); NET.pendingTo=null;
     if (NET.phase==='playing'){ NET.phase='idle'; netEnd(null, 'Connection lost.'); }
@@ -3885,7 +4152,8 @@ function netMessage(m){
     NET.phase='playing'; NET.team=m.team; NET.names=m.names; NET.a=0; NET.b=0; NET.pendingTo=null; hideChal();
     SFX.init();
     if (!isFs()) goFullscreen();          // phones and computers both go full screen
-    newGame({ ...m.cfg, net:undefined, netClient:{ team:m.team } });
+    const cfg={ ...m.cfg, home:{ ...m.cfg.home, logo:itemOf('logo',m.cfg.home.logo)||null }, away:{ ...m.cfg.away, logo:itemOf('logo',m.cfg.away.logo)||null } };
+    newGame({ ...cfg, net:undefined, netClient:{ team:m.team } });
     G.state='break'; G.stateT=0;
     running=true; paused=false;
     $('online').hidden=true; $('menu').hidden=true; $('end').hidden=true; $('pause').hidden=true; $('pauseBtn').hidden=false;

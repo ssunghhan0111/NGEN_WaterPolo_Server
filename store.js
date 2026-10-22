@@ -36,6 +36,14 @@ async function load(){
   } catch (e) { console.log('could not load records:', e.message); }
 }
 
+async function setLogo(name, logo){        // remember each player's team logo for the records board
+  const r = recs.get(name.toLowerCase()); if (!r || r.logo === logo) return;
+  r.logo = logo;
+  try {
+    if (REMOTE) await redis('HSET', 'ngen:rec', name.toLowerCase(), JSON.stringify(r));
+    else fs.writeFileSync(FILE, JSON.stringify({ recs: [...recs.values()], history }));
+  } catch (e) {}
+}
 function recOf(name){ return recs.get(name.toLowerCase()) || { name, w: 0, l: 0 }; }
 
 // winner/loser names, their goals, shootout kicks (or null)
@@ -57,4 +65,4 @@ async function addResult(wName, lName, ws, ls, so){
   return m;
 }
 
-module.exports = { load, recOf, addResult, history: () => history, all: () => [...recs.values()], REMOTE };
+module.exports = { load, recOf, setLogo, addResult, history: () => history, all: () => [...recs.values()], REMOTE };

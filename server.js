@@ -54,9 +54,9 @@ const byName = name => [...players].find(p => p.name.toLowerCase() === String(na
 
 function lobbyMsg(){
   return JSON.stringify({ t: 'lobby',
-    players: [...players].map(p => { const r = store.recOf(p.name); return { name: p.name, w: r.w, l: r.l, busy: !!p.match }; }),
+    players: [...players].map(p => { const r = store.recOf(p.name); return { name: p.name, w: r.w, l: r.l, busy: !!p.match, logo: p.logo }; }),
     recent: store.history().slice(0, 40),
-    board: store.all().map(r => ({ name: r.name, w: r.w, l: r.l })) });
+    board: store.all().map(r => ({ name: r.name, w: r.w, l: r.l, logo: r.logo || null })) });
 }
 let lobbyTimer = null;
 function broadcastLobby(){            // batch quick changes into one update
@@ -102,7 +102,8 @@ function hello(player, m){
     try { send(same.ws, { t: 'denied', why: 'elsewhere' }); same.ws.close(); } catch (e) {}
     goodbye(same);
   }
-  player.name = name; players.add(player);
+  player.name = name; player.logo = /^[a-z0-9]{1,16}$/.test(String(m.logo || '')) ? m.logo : null; players.add(player);
+  if (player.logo) store.setLogo(name, player.logo);
   const r = store.recOf(name);
   send(player.ws, { t: 'welcome', name, w: r.w, l: r.l });
   send(player.ws, lobbyMsg());
@@ -149,7 +150,7 @@ function answer(to, ok){
 function startMatch(a, b){
   const E = makeEngine();
   const seed = Math.floor(Math.random() * 1e9);
-  const teamCfg = (pl, i) => ({ name: pl.name, short: pl.name.split(' ')[0].toUpperCase().slice(0, 8), cap: i === 0 ? '#1f3c8f' : '#f7f8fc', numCol: i === 0 ? '#ffffff' : '#0b1e33' });
+  const teamCfg = (pl, i) => ({ logo: pl.logo || null, name: pl.name, short: pl.name.split(' ')[0].toUpperCase().slice(0, 8), cap: i === 0 ? '#1f3c8f' : '#f7f8fc', numCol: i === 0 ? '#ffffff' : '#0b1e33' });
   const cfg = { home: teamCfg(a, 0), away: teamCfg(b, 1), ...MATCH_SETTINGS, seed };
   const match = { id: seed, players: [a, b], engine: null, E, cfg, inputs: [null, null], countdown: COUNTDOWN, tick: 0, ended: false };
   a.match = b.match = match; a.team = 0; b.team = 1;
