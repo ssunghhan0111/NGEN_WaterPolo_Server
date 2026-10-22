@@ -4019,6 +4019,16 @@ function serverURL(){
 const NET={ ws:null, phase:'idle', team:-1, names:null, a:0, b:0, lastSend:0, lastBD:false, tries:0, retryT:null, startT:0, me:null, lobby:{ players:[], recent:[] }, pendingTo:null, incoming:null };
 
 function logoChip(id){ const lo=itemOf('logo',id); return lo ? `<span class="lgc" style="background:${lo.c1};border-color:${lo.c2}" aria-hidden="true">${lo.emoji}</span>` : ''; }
+// turn the gear names a player sent into what the game draws (the 2nd team swaps to white caps if both picked the same cap)
+const WHITE_CAP_D={ kind:'cap', id:'white', name:'White', base:'#f7f8fc', pat:'solid', num:'#0b1e33' };
+function onlineTeam(t, other){
+  const g=t.gear||{}, out={ ...t, logo:itemOf('logo',t.logo||g.logo)||null };
+  let cd=itemOf('cap',g.cap)||null;
+  if (!cd || (other && other.gear && other.gear.cap===g.cap)) cd = other ? WHITE_CAP_D : itemOf('cap','navy');
+  out.cap=cd.base; out.capD=cd.pat==='solid' && cd.id==='white' ? null : cd; out.numCol=cd.num;
+  out.suitD=itemOf('suit',g.suit)||null; out.gear=g.extra && g.extra!=='none' ? g.extra : null; out.trim = g.extra==='goldears' ? '#ffd23f' : null;
+  return out;
+}
 function fmtWhen(ts){
   const d=new Date(ts), p=n=>String(n).padStart(2,'0');
   let h=d.getHours(); const ap=h<12?'AM':'PM'; h=h%12||12;
@@ -4115,9 +4125,9 @@ function netConnect(){
   onStatus('Connecting…', NET.tries>1 ? 'Still trying. The server may be waking up (up to a minute).' : '', true);
   let ws;
   try { ws=new WebSocket(serverURL()); } catch(e){ return netFail(); }
-  NET.ws=ws;
-  ws.onopen=()=>{ NET.tries=0; NET.phase='hello'; ws.send(JSON.stringify({ t:'hello', v:2, name:S.netName, code:S.teamCode, logo:gear().logo })); };
-  ws.onmessage=(e)=>{ let m; try{ m=JSON.parse(e.data); }catch(err){ return; } netMessage(m); };
+  NET.ws=ws; ws.binaryType='arraybuffer';
+  ws.onopen=()=>{ NET.tries=0; NET.phase='hello'; ws.send(JSON.stringify({ t:'hello', v:3, name:S.netName, code:S.teamCode, logo:gear().logo, gear:gear() })); };
+  ws.onmessage=(e)=>{ if (typeof e.data!=='string'){ voiceReceive(e.data); return; } let m; try{ m=JSON.parse(e.data); }catch(err){ return; } netMessage(m); };
   ws.onclose=()=>{ if (NET.ws!==ws) return; NET.ws=null; hideChal(); NET.pendingTo=null;
     if (NET.phase==='playing'){ NET.phase='idle'; netEnd(null, 'Connection lost.'); }
     else if (NET.phase==='connecting' || NET.phase==='hello' || NET.phase==='lobby') netFail(); };
@@ -4152,7 +4162,7 @@ function netMessage(m){
     NET.phase='playing'; NET.team=m.team; NET.names=m.names; NET.a=0; NET.b=0; NET.pendingTo=null; hideChal();
     SFX.init();
     if (!isFs()) goFullscreen();          // phones and computers both go full screen
-    const cfg={ ...m.cfg, home:{ ...m.cfg.home, logo:itemOf('logo',m.cfg.home.logo)||null }, away:{ ...m.cfg.away, logo:itemOf('logo',m.cfg.away.logo)||null } };
+    const cfg={ ...m.cfg, home:onlineTeam(m.cfg.home, null), away:onlineTeam(m.cfg.away, m.cfg.home) };
     newGame({ ...cfg, net:undefined, netClient:{ team:m.team } });
     G.state='break'; G.stateT=0;
     running=true; paused=false;
@@ -4160,13 +4170,12 @@ function netMessage(m){
     const other=m.names[1-m.team];
     banner(`vs ${other.toUpperCase()}`, `You are ${m.team===0?'DARK':'WHITE'} caps · get ready!`, '#ffd23f', 3);
     SFX.whistle(true); rotateHint(); syncFsBtn();
-    voiceStart(m.team===0, m.ice);
+    voiceStart();
   }
   else if (m.t==='s'){ if (G && G.netClient) netApply(m.d); }
   else if (m.t==='end'){ NET.phase='lobby'; voiceStop(); const won=m.winner===NET.team; if (won) S.online.w++; else S.online.l++; if (m.me) NET.me=m.me; saveS(); setTimeout(()=>netEnd(m), 600); }
   else if (m.t==='left'){ NET.phase='lobby'; voiceStop(); netEnd(null, 'Your opponent left the game.'); }
-  else if (m.t==='rtc'){ voiceSignal(m.d); }
-  else if (m.t==='peerMic'){ VOICE.peerOn=m.on; const o=otherName(); voicePlay(); if (G && G.netClient) toast(m.on ? (VOICE.on ? `🎤 ${o} turned their mic on. You can talk!` : `🎤 ${o} turned their mic on. Tap 🎤 to talk back!`) : `${o} turned their mic off`); }
+  else if (m.t==='peerMic'){ VOICE.peerOn=m.on; const o=otherName(); if (G && G.netClient) toast(m.on ? (VOICE.on ? `🎤 ${o} turned their mic on. You can talk!` : `🎤 ${o} turned their mic on. Tap 🎤 to talk back!`) : `${o} turned their mic off`); }
 }
 function toast2(msg){ if (!$('online').hidden){ onStatus(msg, '', false); setTimeout(()=>{ if (NET.phase==='lobby') onStatus('You are online ✓', 'Tap CHALLENGE next to a teammate to play.', false); }, 3500); } else if (G && running) toast(msg); }
 function netInputTick(){
@@ -4201,62 +4210,92 @@ $('onCancel').onclick=()=>{ NET.phase='idle'; netClose(); $('online').hidden=tru
 $('onSetupBack').onclick=()=>{ NET.phase='idle'; netClose(); $('online').hidden=true; toMenu(); };
 $('onRetry').onclick=()=>{ NET.tries=0; netConnect(); };
 
-/* ---- voice chat: audio goes straight between the two players' devices (WebRTC) ---- */
-const VOICE={ pc:null, stream:null, on:false, sender:null, audio:null, queue:[], ice:[], wa:null, peerOn:false, told:{} };
-function otherName(){ return NET.names ? NET.names[1-NET.team] : 'The other player'; }
-function voiceStart(initiator, ice){
-  voiceStop(true);
-  if (!window.RTCPeerConnection) return;
-  $('micBtn').hidden=false; syncMic(); VOICE.told={}; VOICE.peerOn=false;
-  let pc;
-  const servers=[{ urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302'] }, ...(Array.isArray(ice)?ice:[])];
-  try { pc=new RTCPeerConnection({ iceServers:servers }); } catch(e){ return; }
-  VOICE.pc=pc; VOICE.queue=[];
-  pc.onicecandidate=e=>{ if (e.candidate) netSend({ t:'rtc', d:{ c:e.candidate } }); };
-  pc.onconnectionstatechange=()=>{
-    const st=pc.connectionState;
-    if (st==='failed' && !VOICE.told.failed){ VOICE.told.failed=true; if (G && G.netClient) toast("Voice chat can't connect on this network. The game still works!"); }
-  };
-  pc.ontrack=e=>{
-    const stream=(e.streams && e.streams[0]) || new MediaStream([e.track]);
-    if (!VOICE.audio){ VOICE.audio=document.createElement('audio'); VOICE.audio.autoplay=true; VOICE.audio.setAttribute('playsinline',''); document.body.appendChild(VOICE.audio); }
-    VOICE.audio.srcObject=stream; VOICE.audio.muted=false;
-    voicePlay();
-  };
-  if (initiator){
-    const tr=pc.addTransceiver('audio', { direction:'sendrecv' }); VOICE.sender=tr.sender;
-    pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>netSend({ t:'rtc', d:{ sdp:pc.localDescription } })).catch(()=>{});
+/* ---- voice chat: your voice is squeezed into small chunks and sent through the game server ---- */
+// (going through the server works on any network where the game itself works)
+const VOICE={ on:false, stream:null, src:null, proc:null, sink:null, peerOn:false, buf:[], phase:0, hang:0, next:0, lastRx:0, out:null, tx:0, rx:0, rxLevel:0, told:{} };
+const V_RATE=16000, V_FRAME=640;     // 16 kHz, 40 ms per chunk
+const ADPCM_STEP=[7,8,9,10,11,12,13,14,16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,73,80,88,97,107,118,130,143,157,173,190,209,230,253,279,307,337,371,408,449,494,544,598,658,724,796,876,963,1060,1166,1282,1411,1552,1707,1878,2066,2272,2499,2749,3024,3327,3660,4026,4428,4871,5358,5894,6484,7132,7845,8630,9493,10442,11487,12635,13899,15289,16818,18500,20350,22385,24623,27086,29794,32767];
+const ADPCM_IDX=[-1,-1,-1,-1,2,4,6,8,-1,-1,-1,-1,2,4,6,8];
+const VENC={ pred:0, index:0 };
+function adpcmEncode(pcm){             // Int16Array -> [type, pred lo, pred hi, index, 4-bit codes...]
+  const out=new Uint8Array(4+(pcm.length>>1));
+  out[0]=1; out[1]=VENC.pred&255; out[2]=(VENC.pred>>8)&255; out[3]=VENC.index;
+  let pred=VENC.pred, index=VENC.index;
+  for (let i=0;i<pcm.length;i++){
+    let diff=pcm[i]-pred, code=0; if (diff<0){ code=8; diff=-diff; }
+    let step=ADPCM_STEP[index], delta=step>>3;
+    if (diff>=step){ code|=4; diff-=step; delta+=step; } step>>=1;
+    if (diff>=step){ code|=2; diff-=step; delta+=step; } step>>=1;
+    if (diff>=step){ code|=1; delta+=step; }
+    pred += (code&8) ? -delta : delta; pred = pred>32767?32767:pred<-32768?-32768:pred;
+    index += ADPCM_IDX[code]; index = index<0?0:index>88?88:index;
+    if (i&1) out[4+(i>>1)] |= code<<4; else out[4+(i>>1)] = code;
   }
+  VENC.pred=pred; VENC.index=index;
+  return out;
 }
-// Play the other player's voice. Phones may block it until the screen is tapped: then play it through
-// the game's own (already unlocked) audio, and try the normal way again on the next tap.
-function voicePlay(){
-  const el=VOICE.audio; if (!el || !el.srcObject) return;
-  el.play().then(()=>{ voiceWAoff(); }).catch(()=>{
-    voiceWAon();
-    if (!VOICE.retry){ VOICE.retry=()=>{ window.removeEventListener('pointerdown',VOICE.retry,true); VOICE.retry=null; if (VOICE.audio && VOICE.audio.srcObject) VOICE.audio.play().then(voiceWAoff).catch(()=>{}); };
-      window.addEventListener('pointerdown',VOICE.retry,true); }
-  });
+function adpcmDecode(u8){
+  let pred=(u8[1]|(u8[2]<<8)); if (pred>32767) pred-=65536; let index=Math.min(88,u8[3]);
+  const n=(u8.length-4)*2, out=new Float32Array(n);
+  for (let i=0;i<n;i++){
+    const code = (i&1) ? (u8[4+(i>>1)]>>4) : (u8[4+(i>>1)]&15);
+    const step=ADPCM_STEP[index]; let delta=step>>3;
+    if (code&4) delta+=step; if (code&2) delta+=step>>1; if (code&1) delta+=step>>2;
+    pred += (code&8) ? -delta : delta; pred = pred>32767?32767:pred<-32768?-32768:pred;
+    index += ADPCM_IDX[code]; index = index<0?0:index>88?88:index;
+    out[i]=pred/32768;
+  }
+  return out;
 }
-function voiceWAon(){
-  const ac=SFX.raw(); if (!ac || VOICE.wa || !VOICE.audio) return;
-  try{ const src=ac.createMediaStreamSource(VOICE.audio.srcObject), g=ac.createGain(); g.gain.value=1.4; src.connect(g); g.connect(ac.destination); VOICE.wa={ src, g }; VOICE.audio.muted=true; VOICE.audio.play().catch(()=>{}); }catch(e){}
+function otherName(){ return NET.names ? NET.names[1-NET.team] : 'The other player'; }
+function voiceStart(){
+  voiceStop(true);
+  $('micBtn').hidden=false; syncMic(); VOICE.told={}; VOICE.peerOn=false; VOICE.next=0;
 }
-function voiceWAoff(){ if (!VOICE.wa) return; try{ VOICE.wa.src.disconnect(); VOICE.wa.g.disconnect(); }catch(e){} VOICE.wa=null; if (VOICE.audio) VOICE.audio.muted=false; }
-async function voiceSignal(d){
-  const pc=VOICE.pc; if (!pc || !d) return;
-  try{
-    if (d.sdp){
-      await pc.setRemoteDescription(d.sdp);
-      if (d.sdp.type==='offer'){
-        const tr=pc.getTransceivers()[0]; if (tr){ tr.direction='sendrecv'; VOICE.sender=tr.sender; if (VOICE.on && VOICE.stream) await VOICE.sender.replaceTrack(VOICE.stream.getAudioTracks()[0]); }
-        const a=await pc.createAnswer(); await pc.setLocalDescription(a); netSend({ t:'rtc', d:{ sdp:pc.localDescription } });
-      }
-      for (const c of VOICE.queue.splice(0)) pc.addIceCandidate(c).catch(()=>{});
-    } else if (d.c){ if (pc.remoteDescription) pc.addIceCandidate(d.c).catch(()=>{}); else VOICE.queue.push(d.c); }
-  }catch(e){}
+// mic -> 16 kHz -> skip silence -> compress -> server
+function voiceCapture(ac){
+  const src=ac.createMediaStreamSource(VOICE.stream);
+  const proc=ac.createScriptProcessor(2048,1,1), sink=ac.createGain(); sink.gain.value=0;
+  const ratio=ac.sampleRate/V_RATE;
+  proc.onaudioprocess=e=>{
+    if (!VOICE.on) return;
+    const inp=e.inputBuffer.getChannelData(0);
+    // resample: average the input samples that fall into each 16 kHz sample (a simple low-pass too)
+    let ph=VOICE.phase;
+    while (ph+ratio<=inp.length){ let s=0, k=0; for (let j=Math.max(0,Math.floor(ph)); j<Math.floor(ph+ratio); j++){ s+=inp[j]; k++; } VOICE.buf.push(k?s/k:0); ph+=ratio; }
+    VOICE.phase=ph-inp.length;
+    while (VOICE.buf.length>=V_FRAME){
+      const f=VOICE.buf.splice(0,V_FRAME);
+      let e2=0; for (const v of f) e2+=v*v; const rms=Math.sqrt(e2/f.length);
+      VOICE.frames=(VOICE.frames||0)+1; VOICE.maxRms=Math.max(VOICE.maxRms||0, rms);
+      // only send when someone is talking (and talk a bit louder than the speaker to beat the echo)
+      const echo = performance.now()-VOICE.lastRx < 300 ? 3 : 1;
+      if (rms > 0.012*echo) VOICE.hang=8; else if (VOICE.hang>0) VOICE.hang--; else continue;
+      const pcm=new Int16Array(V_FRAME); for (let i=0;i<V_FRAME;i++){ const v=Math.max(-1,Math.min(1,f[i]*1.6)); pcm[i]=v*32767; }
+      const pkt=adpcmEncode(pcm);
+      if (NET.ws && NET.ws.readyState===1 && NET.ws.bufferedAmount<64*1024){ NET.ws.send(pkt); VOICE.tx++; }
+    }
+  };
+  src.connect(proc); proc.connect(sink); sink.connect(ac.destination);
+  VOICE.src=src; VOICE.proc=proc; VOICE.sink=sink;
+}
+// server -> decompress -> play smoothly (a small buffer evens out bumpy internet)
+function voiceReceive(data){
+  if (!(data instanceof ArrayBuffer)) return;
+  const u8=new Uint8Array(data); if (u8[0]!==1 || u8.length<8) return;
+  const ac=SFX.raw(); if (!ac) return;
+  const pcm=adpcmDecode(u8); VOICE.rx++; VOICE.lastRx=performance.now();
+  let e2=0; for (const v of pcm) e2+=v*v; VOICE.rxLevel=Math.sqrt(e2/pcm.length); VOICE.rxMax=Math.max(VOICE.rxMax||0,VOICE.rxLevel);
+  if (!VOICE.out){ VOICE.out=ac.createGain(); VOICE.out.gain.value=1.6; VOICE.out.connect(ac.destination); }
+  const b=ac.createBuffer(1, pcm.length, V_RATE); b.getChannelData(0).set(pcm);
+  const s=ac.createBufferSource(); s.buffer=b; s.connect(VOICE.out);
+  const now=ac.currentTime;
+  if (VOICE.next<now+0.03 || VOICE.next>now+0.6) VOICE.next=now+0.12;   // (re)start with ~120 ms of cushion
+  s.start(VOICE.next); VOICE.next+=b.duration;
+  if (!VOICE.told.heard && G && G.netClient){ VOICE.told.heard=true; }
 }
 async function micToggle(){
+  const ac=SFX.raw(); SFX.init();
   if (!VOICE.on){
     try{
       if (!VOICE.stream) VOICE.stream=await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true } });
@@ -4264,23 +4303,22 @@ async function micToggle(){
       toast(location.hostname.endsWith('onrender.com') ? 'The mic is blocked. Allow the microphone in your browser settings.' : 'The mic is blocked here. Try playing at ngen-waterpolo-server.onrender.com');
       return;
     }
-    VOICE.on=true; if (VOICE.sender) VOICE.sender.replaceTrack(VOICE.stream.getAudioTracks()[0]).catch(()=>{});
-    toast(VOICE.peerOn ? `🎤 Mic on: you and ${otherName()} can talk!` : `🎤 Mic on. ${otherName()} needs to tap 🎤 too so you can hear them.`);
+    const a=SFX.raw(); if (!a){ toast('Tap the screen once, then try the mic again.'); return; }
+    if (!VOICE.proc) voiceCapture(a);
+    VOICE.on=true;
+    toast(VOICE.peerOn ? `🎤 Mic on: you and ${otherName()} can talk!` : `🎤 Mic on. ${otherName()} can hear you now.`);
   } else {
-    VOICE.on=false; if (VOICE.sender) VOICE.sender.replaceTrack(null).catch(()=>{});
+    VOICE.on=false; VOICE.buf=[];
     toast('Mic off');
   }
-  voicePlay();       // this tap also unlocks the other player's voice on phones
   netSend({ t:'mic', on:VOICE.on }); syncMic();
 }
 function syncMic(){ const b=$('micBtn'); b.classList.toggle('on', VOICE.on); b.setAttribute('aria-pressed', String(VOICE.on)); b.setAttribute('aria-label', VOICE.on ? 'Mic on: tap to mute' : 'Mic off: tap to talk'); b.title=b.getAttribute('aria-label'); }
 function voiceStop(keepBtn){
-  if (VOICE.pc){ try{ VOICE.pc.close(); }catch(e){} VOICE.pc=null; }
+  try{ if (VOICE.proc){ VOICE.proc.onaudioprocess=null; VOICE.proc.disconnect(); } if (VOICE.src) VOICE.src.disconnect(); if (VOICE.sink) VOICE.sink.disconnect(); }catch(e){}
+  VOICE.proc=VOICE.src=VOICE.sink=null;
   if (VOICE.stream){ VOICE.stream.getTracks().forEach(t=>t.stop()); VOICE.stream=null; }
-  voiceWAoff();
-  if (VOICE.retry){ window.removeEventListener('pointerdown',VOICE.retry,true); VOICE.retry=null; }
-  VOICE.on=false; VOICE.sender=null; VOICE.queue=[]; VOICE.peerOn=false;
-  if (VOICE.audio){ VOICE.audio.srcObject=null; }
+  VOICE.on=false; VOICE.peerOn=false; VOICE.buf=[]; VOICE.phase=0; VOICE.next=0;
   if (!keepBtn){ $('micBtn').hidden=true; } syncMic();
 }
 $('micBtn').onclick=e=>{ e.preventDefault(); micToggle(); };

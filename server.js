@@ -22,10 +22,8 @@ function makeEngine(){ const m = { exports: {} }; new Function('module', ENGINE_
 
 const TICK = 1 / 60, SNAP_EVERY = 3, COUNTDOWN = 3.2, MATCH_SETTINGS = { diff: 'rookie', qlen: 30, size: 5 };
 const CHALLENGE_TIMEOUT = 30000;
-// Voice chat relay ("TURN") servers, so voice works when players are on different networks.
-// Paste the iceServers list from a free TURN provider (e.g. Metered) into the ICE_SERVERS setting on Render.
-let ICE = [];
-try { if (process.env.ICE_SERVERS) { ICE = JSON.parse(process.env.ICE_SERVERS); if (!Array.isArray(ICE)) ICE = [ICE]; } } catch (e) { console.log('ICE_SERVERS is not valid JSON, voice relay is off'); }
+const VOICE_MAX_PER_SEC = 40;   // voice chat packets (small compressed audio chunks) a player may send each second
+const GEAR_SLOTS = ['cap', 'suit', 'ball', 'extra', 'logo'];
 const players = new Set();   // everyone in the lobby (welcomed)
 const matches = new Set();
 let nextId = 1;
@@ -39,7 +37,7 @@ function cleanName(n){
 
 // ---------- web page + health check ----------
 const server = http.createServer((req, res) => {
-  if (req.url === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end(`ok online=${players.size} matches=${matches.size} saved=${store.REMOTE ? 'upstash' : 'local'} voiceRelay=${ICE.length ? 'on' : 'off'}`); }
+  if (req.url === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end(`ok online=${players.size} matches=${matches.size} saved=${store.REMOTE ? 'upstash' : 'local'} voice=server`); }
   if (req.url === '/' || req.url.startsWith('/?') || req.url === '/index.html') {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
     return res.end(HTML);
@@ -66,7 +64,8 @@ function broadcastLobby(){            // batch quick changes into one update
 
 wss.on('connection', (ws) => {
   const player = { id: nextId++, ws, name: null, match: null, team: -1, outgoing: null, incoming: null };
-  ws.on('message', (data) => {
+  ws.on('message', (data, isBinary) => {
+    if (isBinary) return relayVoice(player, data);            // voice chat audio: pass it straight to the other player
     let m; try { m = JSON.parse(data); } catch (e) { return; }
     if (!m || typeof m.t !== 'string') return;
     if (m.t === 'hello') return hello(player, m);
@@ -80,11 +79,9 @@ wss.on('connection', (ws) => {
     } else if (m.t === 'challenge') challenge(player, m.to);
     else if (m.t === 'answer') answer(player, !!m.ok);
     else if (m.t === 'cancel') cancelOutgoing(player, 'cancelled');
-    else if (m.t === 'rtc' || m.t === 'mic') {                  // voice chat: pass it to the other player
+    else if (m.t === 'mic') {                                   // tell the other player the mic went on/off
       const mt = player.match; if (!mt) return;
-      const other = mt.players[1 - player.team];
-      if (m.t === 'rtc') send(other.ws, { t: 'rtc', d: m.d });
-      else send(other.ws, { t: 'peerMic', on: !!m.on });
+      send(mt.players[1 - player.team].ws, { t: 'peerMic', on: !!m.on });
     } else if (m.t === 'leave') leaveMatch(player, 'left');
   });
   ws.on('close', () => goodbye(player));
@@ -103,6 +100,8 @@ function hello(player, m){
     goodbye(same);
   }
   player.name = name; player.logo = /^[a-z0-9]{1,16}$/.test(String(m.logo || '')) ? m.logo : null; players.add(player);
+  player.gear = {};                                           // locker items this player wears in online games
+  for (const k of GEAR_SLOTS) { const v = m.gear && m.gear[k]; if (/^[a-z0-9]{1,16}$/.test(String(v || ''))) player.gear[k] = v; }
   if (player.logo) store.setLogo(name, player.logo);
   const r = store.recOf(name);
   send(player.ws, { t: 'welcome', name, w: r.w, l: r.l });
@@ -146,15 +145,25 @@ function answer(to, ok){
   startMatch(c.from, to);
 }
 
+// ---------- voice chat ----------
+function relayVoice(player, data){
+  const mt = player.match; if (!mt || mt.ended || data.length > 2000) return;
+  const now = Date.now();
+  if (!player.vWin || now - player.vWin > 1000) { player.vWin = now; player.vCount = 0; }
+  if (++player.vCount > VOICE_MAX_PER_SEC) return;
+  const other = mt.players[1 - player.team];
+  if (other.ws.readyState === 1 && other.ws.bufferedAmount < 256 * 1024) other.ws.send(data, { binary: true });
+}
+
 // ---------- matches ----------
 function startMatch(a, b){
   const E = makeEngine();
   const seed = Math.floor(Math.random() * 1e9);
-  const teamCfg = (pl, i) => ({ logo: pl.logo || null, name: pl.name, short: pl.name.split(' ')[0].toUpperCase().slice(0, 8), cap: i === 0 ? '#1f3c8f' : '#f7f8fc', numCol: i === 0 ? '#ffffff' : '#0b1e33' });
-  const cfg = { home: teamCfg(a, 0), away: teamCfg(b, 1), ...MATCH_SETTINGS, seed };
+  const teamCfg = (pl, i) => ({ logo: pl.logo || null, gear: pl.gear || {}, name: pl.name, short: pl.name.split(' ')[0].toUpperCase().slice(0, 8), cap: i === 0 ? '#1f3c8f' : '#f7f8fc', numCol: i === 0 ? '#ffffff' : '#0b1e33' });
+  const cfg = { home: teamCfg(a, 0), away: teamCfg(b, 1), ...MATCH_SETTINGS, seed, ball: (a.gear && a.gear.ball) || 'classic' };
   const match = { id: seed, players: [a, b], engine: null, E, cfg, inputs: [null, null], countdown: COUNTDOWN, tick: 0, ended: false };
   a.match = b.match = match; a.team = 0; b.team = 1;
-  for (const [i, pl] of [a, b].entries()) send(pl.ws, { t: 'match', team: i, names: [a.name, b.name], cfg, ice: ICE });
+  for (const [i, pl] of [a, b].entries()) send(pl.ws, { t: 'match', team: i, names: [a.name, b.name], cfg });
   matches.add(match);
   broadcastLobby();
   console.log(`match ${match.id}: ${a.name} vs ${b.name} (${matches.size} running)`);

@@ -36,7 +36,8 @@ Sprinting uses energy. A tired swimmer slows down, and a tired shooter misses mo
 
 - The first time, pick your name from the list (or add a new one) and type the **team code**. Only people with the code can see who's online.
 - Tap **CHALLENGE** next to a teammate. They get a pop-up and can say yes or no.
-- In a game, tap 🎤 to talk. The mic is off until you turn it on, and the sound goes straight between the two devices.
+- In a game, tap 🎤 to talk. The mic is off until you turn it on. Voice goes through the game server, so it works on any network where the game works.
+- Online, each player's team wears their own locker items: caps, suits, extras and team logo (if both pick the same cap, the second team wears white).
 - Every result is saved, like *"Ian lost to Jayden 3–5 · 2026/10/21 10:00 AM"*, and everyone's online record shows in the lobby.
 - The server runs the match, so both players always see the same game.
 
@@ -80,7 +81,6 @@ Hosted on [Render](https://render.com) on the free plan:
 | `TEAM_CODE` | The secret code players type to go online. If you don't set it, it's `NGEN`. |
 | `UPSTASH_REDIS_REST_URL` | From your free Upstash database: keeps records and history |
 | `UPSTASH_REDIS_REST_TOKEN` | From your free Upstash database |
-| `ICE_SERVERS` | Optional voice-chat relay (TURN) list, so voice works when players are on different networks |
 
 Without the Upstash keys the game still works, but records reset whenever the free server restarts.
 
