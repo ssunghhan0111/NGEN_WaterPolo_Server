@@ -27,7 +27,7 @@ A cartoon water polo game for the web. Play as **Ngen Aquatics** against the com
 |---|---|---|
 | Swim | Arrow keys | Joystick (bottom left) |
 | Pass / switch swimmer | A (or Space) | PASS button |
-| Shoot / tackle | S (hold for power) | SHOOT / TACKLE button |
+| Shoot / tackle | Hold S, aim with ↑ ↓, let go to shoot | Hold SHOOT, aim with the joystick, let go |
 | Sprint | D (or Shift) | SPRINT button |
 | Pause | P | ⏸ at the top |
 
@@ -35,7 +35,7 @@ Sprinting uses energy. A tired swimmer slows down, and a tired shooter misses mo
 
 ## Online play
 
-- The first time, pick your name from the list (or add a new one). That's it, no code needed.
+- The first time, pick your name from the list (or add a new one). No code needed.
 - Tap **CHALLENGE** next to a teammate. They get a pop-up and can say yes or no.
 - In a game, tap 🎤 to talk. The mic is off until you turn it on. Voice goes through the game server, so it works on any network where the game works.
 - Online, each player's team wears their own locker items: caps, suits, extras and team logo (if both pick the same cap, the second team wears white).
