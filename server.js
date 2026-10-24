@@ -36,7 +36,7 @@ function cleanName(n){
 
 // ---------- web page + health check ----------
 const server = http.createServer((req, res) => {
-  if (req.url === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end(`ok online=${players.size} matches=${matches.size} saved=${store.REMOTE ? 'upstash' : 'local'} voice=server`); }
+  if (req.url === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end(`ok online=${players.size} matches=${matches.size} saved=${store.REMOTE ? 'upstash' : 'local'} voice=server code=none`); }
   if (req.url === '/' || req.url.startsWith('/?') || req.url === '/index.html') {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
     return res.end(HTML);
