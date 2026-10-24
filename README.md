@@ -10,11 +10,13 @@ A cartoon water polo game for the web. Play as **Ngen Aquatics** against the com
 
 ## What's in the game
 
-- **5 vs 5 water polo** with real rules: shot clock, exclusions, the 2 m and 5 m lines, and penalty shootouts for ties
+- **4 vs 4 water polo** (plus goalies) with real rules. Five swimmers take turns: each quarter the next one rests on the bench. shot clock, exclusions, the 2 m and 5 m lines, and penalty shootouts for ties
 - **Season mode:** play 8 rival teams, with standings, stats and league leaders. The top 2 meet in a **Championship Final** under the lights, and the winner lifts the trophy 🏆
 - **Surprise games:** some games are a 🌙 night game (glowing caps), a 🌊 wave pool (currents push everyone) or a 🏖️ beach party (giant beach ball, extra power-ups)
 - **Levels & locker:** start at Level 1 and level up as you play. 30 levels unlock over 100 items: patterned caps, swim suits, balls, team logos, goal parties and extras. Rival teams get a little tougher each level
 - **Online 1v1:** pick your name, see who's online, and challenge a teammate. Talk with the 🎤 button. Records and match history are saved
+- **Boss battles:** every 5 levels a crazy boss team shows up (Kraken Crew, Robo Rays, Great White Squad, Ice Titans, Thunder Whales, Poseidon's Legends). Beat them for rare prizes
+- **Ultimate moves:** fill the meter, then fire your move: ⚡ Super Shot, 🦈 Shark Dash, 🌩️ Lightning Pass or 🌊 Tsunami Shot (a boss prize). Pick it in the locker
 - **Super Shot**, **power-ups** (turbo, mega ball, freeze, rubber duck, octopus) and **Mega Goalie** after a goal against
 - **Goal celebrations** for every player, an announcer who calls names, and the team cheer at the end: *"Ngen on me, Ngen on three… one, two, three, NGEN!"*
 - **Star challenges** every game for bonus XP

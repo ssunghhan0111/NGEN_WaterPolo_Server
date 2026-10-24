@@ -19,7 +19,7 @@ const ENGINE_SRC = HTML.slice(HTML.indexOf('<script>') + 8, HTML.lastIndexOf('</
 // Each match gets its own copy of the engine (the engine keeps one game in memory at a time).
 function makeEngine(){ const m = { exports: {} }; new Function('module', ENGINE_SRC)(m); return m.exports; }
 
-const TICK = 1 / 60, SNAP_EVERY = 3, COUNTDOWN = 3.2, MATCH_SETTINGS = { diff: 'rookie', qlen: 30, size: 5 };
+const TICK = 1 / 60, SNAP_EVERY = 3, COUNTDOWN = 3.2, MATCH_SETTINGS = { diff: 'rookie', qlen: 30, size: 4 };
 const CHALLENGE_TIMEOUT = 30000;
 const VOICE_MAX_PER_SEC = 40;   // voice chat packets (small compressed audio chunks) a player may send each second
 const GEAR_SLOTS = ['cap', 'suit', 'ball', 'extra', 'logo'];
