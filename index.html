@@ -4303,7 +4303,7 @@ function netConnect(){
   let ws;
   try { ws=new WebSocket(serverURL()); } catch(e){ return netFail(); }
   NET.ws=ws; ws.binaryType='arraybuffer';
-  ws.onopen=()=>{ NET.tries=0; NET.phase='hello'; ws.send(JSON.stringify({ t:'hello', v:3, name:S.netName, code:S.teamCode, logo:gear().logo, gear:gear() })); };
+  ws.onopen=()=>{ NET.tries=0; NET.phase='hello'; ws.send(JSON.stringify({ t:'hello', v:3, name:S.netName, code:S.teamCode||'NGEN', logo:gear().logo, gear:gear() })); };
   ws.onmessage=(e)=>{ if (typeof e.data!=='string'){ voiceReceive(e.data); return; } let m; try{ m=JSON.parse(e.data); }catch(err){ return; } netMessage(m); };
   ws.onclose=()=>{ if (NET.ws!==ws) return; NET.ws=null; hideChal(); NET.pendingTo=null;
     if (NET.phase==='playing'){ NET.phase='idle'; netEnd(null, 'Connection lost.'); }
@@ -4324,7 +4324,7 @@ function netMessage(m){
   if (m.t==='welcome'){ NET.phase='lobby'; NET.me={ w:m.w, l:m.l }; S.netName=m.name; saveS(); onStatus('You are online ✓', 'Tap CHALLENGE next to a teammate to play.', false); renderLobby(); }
   else if (m.t==='denied'){
     NET.phase='idle'; const w=NET.ws; NET.ws=null; try{ w.close(); }catch(e){}
-    const msg = m.why==='code' ? "That team code didn't work. Check it and try again." : m.why==='name' ? 'Names use letters only, 2 to 12 letters.'
+    const msg = m.why==='code' ? "The game server needs an update before new players can join. Please try again later." : m.why==='name' ? 'Names use letters only, 2 to 12 letters.'
       : m.why==='taken' ? `${m.name||'That name'} is playing a game on another device right now.` : 'You went online on another device, so this one was signed out.';
     if (m.why==='elsewhere'){ onStatus('Signed out here', msg, false); $('onRetry').hidden=false; return; }
     onView('onSetup'); buildSetup(msg); onStatusHide(); if (!$('online').hidden) return; $('end').hidden=true; $('online').hidden=false;
